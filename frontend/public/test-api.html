@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Connection</title>
+</head>
+<body>
+    <h1>Test API Connection</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <button onclick="testEstadisticas()">Test Estadísticas</button>
+    <button onclick="testPedidos()">Test Pedidos</button>
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        async function testConnection() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Testing connection...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/test/`);
+                const data = await response.json();
+                results.innerHTML = `<h3>Connection Test:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML = `<h3>Connection Error:</h3><pre>${error.message}</pre>`;
+            }
+        }
+
+        async function testEstadisticas() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Testing estadísticas...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/pedidos/estadisticas/`);
+                const data = await response.json();
+                results.innerHTML = `<h3>Estadísticas Test:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML = `<h3>Estadísticas Error:</h3><pre>${error.message}</pre>`;
+            }
+        }
+
+        async function testPedidos() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Testing pedidos...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/pedidos/`);
+                const data = await response.json();
+                results.innerHTML = `<h3>Pedidos Test (showing first 2):</h3><pre>${JSON.stringify(data.slice(0, 2), null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML = `<h3>Pedidos Error:</h3><pre>${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>
