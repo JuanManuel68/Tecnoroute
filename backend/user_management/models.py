@@ -14,7 +14,6 @@ class UserProfile(models.Model):
     telefono = models.CharField(max_length=20, blank=True, verbose_name="Teléfono")
     direccion = models.TextField(blank=True, verbose_name="Dirección")
     ciudad = models.CharField(max_length=100, blank=True, verbose_name="Ciudad")
-    codigo_postal = models.CharField(max_length=10, blank=True, verbose_name="Código Postal")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 

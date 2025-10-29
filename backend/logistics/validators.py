@@ -1,14 +1,13 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.db.models import Q
-from .models import Cliente, Conductor
+from .models import Conductor
 
 
 def validate_unique_email_sistema(email):
     """
     Valida que el email no exista en ninguna parte del sistema:
     - User model
-    - Cliente model  
     - Conductor model
     """
     errors = []
@@ -17,10 +16,6 @@ def validate_unique_email_sistema(email):
     if User.objects.filter(email=email).exists():
         errors.append('Este email ya está registrado como usuario.')
     
-    # Verificar en Cliente
-    if Cliente.objects.filter(email=email).exists():
-        errors.append('Este email ya está registrado como cliente.')
-    
     # Verificar en Conductor
     if Conductor.objects.filter(email=email).exists():
         errors.append('Este email ya está registrado como conductor.')
@@ -28,17 +23,6 @@ def validate_unique_email_sistema(email):
     if errors:
         raise ValidationError(' '.join(errors))
 
-
-def validate_unique_email_cliente(email, cliente_id=None):
-    """
-    Valida que el email no exista en otros clientes
-    """
-    queryset = Cliente.objects.filter(email=email)
-    if cliente_id:
-        queryset = queryset.exclude(id=cliente_id)
-    
-    if queryset.exists():
-        raise ValidationError('Ya existe un cliente con este email.')
 
 
 def validate_unique_email_conductor(email, conductor_id=None):

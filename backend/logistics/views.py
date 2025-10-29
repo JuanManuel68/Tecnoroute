@@ -7,7 +7,7 @@ from django.db.models import Q
 from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 
-from .models import Cliente, Conductor, Vehiculo, Ruta, Envio, SeguimientoEnvio
+from .models import Conductor, Vehiculo, Ruta, Envio, SeguimientoEnvio
 from .serializers import (
     ClienteSerializer, ConductorSerializer, VehiculoSerializer, 
     RutaSerializer, EnvioSerializer, EnvioCreateSerializer, 
@@ -57,8 +57,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
                 profile.direccion = data['direccion']
             if 'ciudad' in data:
                 profile.ciudad = data['ciudad']
-            if 'codigo_postal' in data:
-                profile.codigo_postal = data['codigo_postal']
             profile.save()
         except UserProfile.DoesNotExist:
             return Response({'error': 'Perfil de usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)

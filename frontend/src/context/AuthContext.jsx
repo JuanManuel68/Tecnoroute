@@ -68,7 +68,6 @@ export const AuthProvider = ({ children }) => {
             phone: data.user.telefono,
             address: data.user.direccion,
             city: data.user.ciudad,
-            postalCode: data.user.codigo_postal,
             // Incluir información adicional según el rol
             ...(data.user.conductor_info && {
               conductor_info: data.user.conductor_info
@@ -145,6 +144,9 @@ export const AuthProvider = ({ children }) => {
               name: (responseData.user.first_name + ' ' + responseData.user.last_name).trim(),
               email: responseData.user.email,
               role: responseData.user.role,
+              phone: userData.phone || '',
+              address: userData.address || '',
+              city: userData.city || '',
               // Incluir información del conductor si existe
               ...(responseData.user.role === 'conductor' && responseData.conductor_info && {
                 conductor_info: responseData.conductor_info

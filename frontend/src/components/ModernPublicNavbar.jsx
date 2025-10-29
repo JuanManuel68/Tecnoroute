@@ -122,15 +122,6 @@ const ModernPublicNavbar = () => {
                 </>
               ) : (
                 <div className="flex items-center space-x-3">
-                  {/* Botón Contáctanos cuando está autenticado */}
-                  <button
-                    onClick={() => handleNavigation('/contact')}
-                    className="flex items-center space-x-2 px-4 py-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200 font-medium"
-                  >
-                    <PhoneIcon className="w-5 h-5" />
-                    <span>Contáctanos</span>
-                  </button>
-                  
                   {/* Cart Icon - solo mostrar si es usuario */}
                   {isUser() && (
                     <button
@@ -248,13 +239,6 @@ const ModernPublicNavbar = () => {
                   <div className="bg-primary-100 text-primary-700 px-4 py-3 rounded-lg font-medium text-center">
                     Hola, {user?.name || 'Usuario'}
                   </div>
-                  <button
-                    onClick={() => handleNavigation('/contact')}
-                    className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"
-                  >
-                    <PhoneIcon className="w-5 h-5" />
-                    <span>Contáctanos</span>
-                  </button>
                   <button
                     onClick={() => handleNavigation('/profile')}
                     className="w-full flex items-center space-x-3 px-4 py-3 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"

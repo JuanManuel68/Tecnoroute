@@ -1,17 +1,9 @@
 from django.contrib import admin
 from .models import (
-    Cliente, Conductor, Vehiculo, Ruta, Envio, 
+    Conductor, Vehiculo, Ruta, Envio, 
     SeguimientoEnvio, Admin
 )
 
-
-@admin.register(Cliente)
-class ClienteAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'email', 'telefono', 'ciudad', 'activo', 'fecha_registro']
-    list_filter = ['activo', 'ciudad', 'fecha_registro']
-    search_fields = ['nombre', 'email', 'telefono']
-    list_editable = ['activo']
-    date_hierarchy = 'fecha_registro'
 
 
 @admin.register(Conductor)
@@ -44,7 +36,7 @@ class RutaAdmin(admin.ModelAdmin):
 class EnvioAdmin(admin.ModelAdmin):
     list_display = ['numero_guia', 'cliente', 'estado', 'prioridad', 'fecha_creacion']
     list_filter = ['estado', 'prioridad', 'fecha_creacion']
-    search_fields = ['numero_guia', 'cliente__nombre', 'descripcion_carga']
+    search_fields = ['numero_guia', 'cliente__username', 'cliente__email', 'descripcion_carga']
     list_editable = ['estado', 'prioridad']
     date_hierarchy = 'fecha_creacion'
     raw_id_fields = ['cliente', 'ruta', 'vehiculo', 'conductor']

@@ -23,7 +23,10 @@ const ModernProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showNotification, setShowNotification] = useState(false);
-  const [favorites, setFavorites] = useState(new Set());
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('favorites');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -108,6 +111,8 @@ const ModernProducts = () => {
       newFavorites.add(productId);
     }
     setFavorites(newFavorites);
+    // Guardar en localStorage
+    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)));
   };
 
   const formatPrice = (precio, descuento = 0) => {
@@ -254,7 +259,10 @@ const ModernProducts = () => {
                   {/* Quick Actions */}
                   <div className="absolute top-3 right-3 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <button
-                      onClick={() => toggleFavorite(producto.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(producto.id);
+                      }}
                       className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors"
                     >
                       {favorites.has(producto.id) ? (
@@ -262,9 +270,6 @@ const ModernProducts = () => {
                       ) : (
                         <HeartIcon className="w-5 h-5 text-gray-600" />
                       )}
-                    </button>
-                    <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
-                      <EyeIcon className="w-5 h-5 text-gray-600" />
                     </button>
                   </div>
 
@@ -312,21 +317,30 @@ const ModernProducts = () => {
                     </span>
                   </div>
 
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={() => handleAddToCart(producto)}
-                    disabled={producto.stock === 0}
-                    className={`w-full flex items-center justify-center space-x-2 ${
-                      producto.stock === 0
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed py-3 px-4 rounded-lg font-medium transition-all duration-200'
-                        : 'btn-primary'
-                    }`}
-                  >
-                    <ShoppingCartIcon className="w-5 h-5" />
-                    <span>
-                      {producto.stock === 0 ? 'Sin Stock' : 'Agregar al Carrito'}
-                    </span>
-                  </button>
+                  {/* Buttons */}
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => navigate(`/producto/${producto.id}`)}
+                      className="w-full flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium transition-all duration-200"
+                    >
+                      <EyeIcon className="w-5 h-5" />
+                      <span>Ver Producto</span>
+                    </button>
+                    <button
+                      onClick={() => handleAddToCart(producto)}
+                      disabled={producto.stock === 0}
+                      className={`w-full flex items-center justify-center space-x-2 ${
+                        producto.stock === 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed py-3 px-4 rounded-lg font-medium transition-all duration-200'
+                          : 'btn-primary'
+                      }`}
+                    >
+                      <ShoppingCartIcon className="w-5 h-5" />
+                      <span>
+                        {producto.stock === 0 ? 'Sin Stock' : 'Agregar al Carrito'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );

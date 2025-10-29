@@ -82,7 +82,7 @@ def create_products():
             'categoria': categorias.get('Refrigeradores'),
             'precio': Decimal('1299000.00'),
             'stock': 15,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Refrigerador+LG',
+            'imagen_url': 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -91,7 +91,7 @@ def create_products():
             'categoria': categorias.get('Refrigeradores'),
             'precio': Decimal('1150000.00'),
             'stock': 12,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Nevera+Samsung',
+            'imagen_url': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -100,7 +100,7 @@ def create_products():
             'categoria': categorias.get('Refrigeradores'),
             'precio': Decimal('899000.00'),
             'stock': 20,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Refrigerador+Whirlpool',
+            'imagen_url': 'https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?w=400&h=400&fit=crop',
             'activo': True
         },
         
@@ -111,7 +111,7 @@ def create_products():
             'categoria': categorias.get('Lavadoras'),
             'precio': Decimal('1450000.00'),
             'stock': 8,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Lavadora+LG',
+            'imagen_url': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -120,7 +120,7 @@ def create_products():
             'categoria': categorias.get('Lavadoras'),
             'precio': Decimal('1350000.00'),
             'stock': 10,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Lavadora+Samsung',
+            'imagen_url': 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -129,7 +129,7 @@ def create_products():
             'categoria': categorias.get('Lavadoras'),
             'precio': Decimal('980000.00'),
             'stock': 15,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Lavadora+Electrolux',
+            'imagen_url': 'https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?w=400&h=400&fit=crop',
             'activo': True
         },
         
@@ -140,7 +140,7 @@ def create_products():
             'categoria': categorias.get('Televisores'),
             'precio': Decimal('1899000.00'),
             'stock': 12,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=TV+Samsung+55',
+            'imagen_url': 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -149,7 +149,7 @@ def create_products():
             'categoria': categorias.get('Televisores'),
             'precio': Decimal('1299000.00'),
             'stock': 18,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=TV+LG+43',
+            'imagen_url': 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -158,7 +158,7 @@ def create_products():
             'categoria': categorias.get('Televisores'),
             'precio': Decimal('2799000.00'),
             'stock': 6,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=TV+Sony+65',
+            'imagen_url': 'https://images.unsplash.com/photo-1601944177325-f8867652837f?w=400&h=400&fit=crop',
             'activo': True
         },
         
@@ -169,7 +169,7 @@ def create_products():
             'categoria': categorias.get('Electrodomésticos Cocina'),
             'precio': Decimal('349000.00'),
             'stock': 25,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Microondas+Panasonic',
+            'imagen_url': 'https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -178,7 +178,7 @@ def create_products():
             'categoria': categorias.get('Electrodomésticos Cocina'),
             'precio': Decimal('189000.00'),
             'stock': 30,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Licuadora+Oster',
+            'imagen_url': 'https://images.unsplash.com/photo-1585515320310-259814833e62?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -187,7 +187,7 @@ def create_products():
             'categoria': categorias.get('Electrodomésticos Cocina'),
             'precio': Decimal('899000.00'),
             'stock': 12,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Estufa+Haceb',
+            'imagen_url': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop',
             'activo': True
         },
         
@@ -198,7 +198,7 @@ def create_products():
             'categoria': categorias.get('Aires Acondicionados'),
             'precio': Decimal('1299000.00'),
             'stock': 10,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=AC+LG+12000',
+            'imagen_url': 'https://images.unsplash.com/photo-1631545804749-7416cf5e1b31?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -207,7 +207,7 @@ def create_products():
             'categoria': categorias.get('Aires Acondicionados'),
             'precio': Decimal('1799000.00'),
             'stock': 8,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=AC+Samsung+18000',
+            'imagen_url': 'https://images.unsplash.com/photo-1635274538481-52ab53c81d1e?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -216,7 +216,7 @@ def create_products():
             'categoria': categorias.get('Aires Acondicionados'),
             'precio': Decimal('449000.00'),
             'stock': 20,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Ventilador+Hunter',
+            'imagen_url': 'https://images.unsplash.com/photo-1622289662807-16d0d07e3b0f?w=400&h=400&fit=crop',
             'activo': True
         },
         
@@ -227,7 +227,7 @@ def create_products():
             'categoria': categorias.get('Refrigeradores'),
             'precio': Decimal('999000.00'),
             'stock': 14,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Refrigerador+Mabe',
+            'imagen_url': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&sat=20',
             'activo': True
         },
         {
@@ -236,7 +236,7 @@ def create_products():
             'categoria': categorias.get('Lavadoras'),
             'precio': Decimal('2299000.00'),
             'stock': 5,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=LG+WashTower',
+            'imagen_url': 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -245,7 +245,7 @@ def create_products():
             'categoria': categorias.get('Televisores'),
             'precio': Decimal('899000.00'),
             'stock': 25,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=TV+TCL+32',
+            'imagen_url': 'https://images.unsplash.com/photo-1567690187548-f07b1d7bf5a9?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -254,7 +254,7 @@ def create_products():
             'categoria': categorias.get('Electrodomésticos Cocina'),
             'precio': Decimal('459000.00'),
             'stock': 20,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Freidora+Ninja',
+            'imagen_url': 'https://images.unsplash.com/photo-1629385103725-2e4634fb1c09?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -263,7 +263,7 @@ def create_products():
             'categoria': categorias.get('Electrodomésticos Cocina'),
             'precio': Decimal('229000.00'),
             'stock': 35,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Cafetera+Oster',
+            'imagen_url': 'https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -272,7 +272,7 @@ def create_products():
             'categoria': categorias.get('Aires Acondicionados'),
             'precio': Decimal('1599000.00'),
             'stock': 7,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=AC+Carrier+24000',
+            'imagen_url': 'https://images.unsplash.com/photo-1597925376185-1f8bf6451c62?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -281,7 +281,7 @@ def create_products():
             'categoria': categorias.get('Electrodomésticos Cocina'),
             'precio': Decimal('1899000.00'),
             'stock': 8,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Lavaplatos+Electrolux',
+            'imagen_url': 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -290,7 +290,7 @@ def create_products():
             'categoria': categorias.get('Televisores'),
             'precio': Decimal('4299000.00'),
             'stock': 3,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Samsung+QLED+75',
+            'imagen_url': 'https://images.unsplash.com/photo-1593359863503-f598531ec1ca?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -299,7 +299,7 @@ def create_products():
             'categoria': categorias.get('Electrodomésticos Cocina'),
             'precio': Decimal('1299000.00'),
             'stock': 12,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=KitchenAid+Mixer',
+            'imagen_url': 'https://images.unsplash.com/photo-1578643463396-0997cb5328c1?w=400&h=400&fit=crop',
             'activo': True
         },
         {
@@ -308,7 +308,7 @@ def create_products():
             'categoria': categorias.get('Refrigeradores'),
             'precio': Decimal('2799000.00'),
             'stock': 6,
-            'imagen_url': 'https://via.placeholder.com/400x400?text=Whirlpool+SideBySide',
+            'imagen_url': 'https://images.unsplash.com/photo-1565480013926-d9c43bbf7115?w=400&h=400&fit=crop',
             'activo': True
         }
     ]
@@ -325,7 +325,10 @@ def create_products():
             created_products.append(producto)
             print(f"✅ Producto creado: {producto.nombre} - ${producto.precio:,.0f}")
         else:
-            print(f"⚠️ Producto ya existe: {producto_data['nombre']}")
+            # Actualizar la imagen del producto existente
+            existing_product.imagen_url = producto_data['imagen_url']
+            existing_product.save()
+            print(f"🔄 Producto actualizado: {producto_data['nombre']}")
     
     return created_products
 

@@ -19,12 +19,18 @@ const ModernCheckout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Ciudades disponibles con sus códigos postales
+  // Ciudades disponibles
   const cities = [
-    { name: 'Bogotá', postalCode: '110111' },
-    { name: 'Soacha', postalCode: '250052' },
-    { name: 'Chía', postalCode: '250001' },
-    { name: 'Zipaquirá', postalCode: '250252' }
+    'Bogotá',
+    'Soacha',
+    'Chía',
+    'Zipaquirá',
+    'Cota',
+    'Funza',
+    'Mosquera',
+    'Madrid',
+    'Facatativá',
+    'Cajicá'
   ];
   
   const [orderComplete, setOrderComplete] = useState(false);
@@ -38,7 +44,6 @@ const ModernCheckout = () => {
     phone: '',
     address: '',
     city: '',
-    postalCode: '',
     // Datos de pago
     cardNumber: '',
     expiryDate: '',
@@ -57,17 +62,8 @@ const ModernCheckout = () => {
         phone: user.phone || user.telefono || '',
         address: user.address || user.direccion || '',
         city: user.city || user.ciudad || '',
-        postalCode: user.postal_code || user.codigo_postal || '',
         cardName: user.name || (user.first_name + ' ' + user.last_name).trim() || ''
       };
-      
-      // Si la ciudad del usuario está en nuestra lista, auto-poblar el código postal
-      if (userData.city && !userData.postalCode) {
-        const selectedCity = cities.find(city => city.name === userData.city);
-        if (selectedCity) {
-          userData.postalCode = selectedCity.postalCode;
-        }
-      }
       
       console.log('Checkout - User data loaded:', userData); // Debug log
       
@@ -101,14 +97,6 @@ const ModernCheckout = () => {
     // Format phone number
     if (name === 'phone') {
       formattedValue = value.replace(/\D/g, '').replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, '+$1 ($2) $3-$4');
-    }
-    
-    // Auto-populate postal code when city is selected
-    if (name === 'city') {
-      const selectedCity = cities.find(city => city.name === value);
-      if (selectedCity) {
-        updatedData.postalCode = selectedCity.postalCode;
-      }
     }
     
     updatedData[name] = formattedValue;
@@ -148,10 +136,6 @@ const ModernCheckout = () => {
     
     if (!formData.city.trim()) {
       newErrors.city = 'La ciudad es obligatoria';
-    }
-    
-    if (!formData.postalCode.trim()) {
-      newErrors.postalCode = 'El código postal es obligatorio';
     }
     
     // Validación de datos de pago
@@ -428,7 +412,39 @@ const ModernCheckout = () => {
                       </p>
                     )}
                   </div>
-                  <div className="md:col-span-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ciudad <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="city"
+                        required
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none ${
+                          errors.city 
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                            : 'border-gray-300'
+                        }`}
+                      >
+                        <option value="">Selecciona tu ciudad</option>
+                        {cities.map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    </div>
+                    {errors.city && (
+                      <p className="text-red-600 text-sm mt-1 flex items-center">
+                        <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
+                        {errors.city}
+                      </p>
+                    )}
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Dirección <span className="text-red-500">*</span>
                     </label>
@@ -449,58 +465,6 @@ const ModernCheckout = () => {
                       <p className="text-red-600 text-sm mt-1 flex items-center">
                         <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
                         {errors.address}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ciudad <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <select
-                        name="city"
-                        required
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none ${
-                          errors.city 
-                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                            : 'border-gray-300'
-                        }`}
-                      >
-                        <option value="">Selecciona tu ciudad</option>
-                        {cities.map((city) => (
-                          <option key={city.name} value={city.name}>
-                            {city.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                    </div>
-                    {errors.city && (
-                      <p className="text-red-600 text-sm mt-1 flex items-center">
-                        <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
-                        {errors.city}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Código Postal <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="postalCode"
-                      required
-                      value={formData.postalCode}
-                      readOnly
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
-                      placeholder="Selecciona una ciudad"
-                    />
-                    {errors.postalCode && (
-                      <p className="text-red-600 text-sm mt-1 flex items-center">
-                        <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
-                        {errors.postalCode}
                       </p>
                     )}
                   </div>

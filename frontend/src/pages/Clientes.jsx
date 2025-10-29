@@ -50,8 +50,7 @@ const Clientes = () => {
     email: '',
     telefono: '',
     direccion: '',
-    ciudad: '',
-    codigo_postal: ''
+    ciudad: ''
   });
 
   useEffect(() => {
@@ -82,8 +81,7 @@ const Clientes = () => {
       email: cliente.email || '',
       telefono: cliente.telefono || '',
       direccion: cliente.direccion || '',
-      ciudad: cliente.ciudad || '',
-      codigo_postal: cliente.codigo_postal || ''
+      ciudad: cliente.ciudad || ''
     });
     setOpenEditDialog(true);
   };
@@ -97,8 +95,7 @@ const Clientes = () => {
         last_name: formData.last_name,
         telefono: formData.telefono,
         direccion: formData.direccion,
-        ciudad: formData.ciudad,
-        codigo_postal: formData.codigo_postal
+        ciudad: formData.ciudad
       });
       
       setSuccess('Cliente actualizado exitosamente');

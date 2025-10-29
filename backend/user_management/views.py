@@ -27,7 +27,7 @@ def register_user(request):
         data = request.data if hasattr(request, 'data') else json.loads(request.body)
         
         # Validar datos requeridos
-        required_fields = ['name', 'email', 'password', 'phone', 'address', 'city']
+        required_fields = ['name', 'email', 'password', 'phone', 'address']
         for field in required_fields:
             if not data.get(field):
                 return Response({
@@ -64,8 +64,7 @@ def register_user(request):
                 role='customer',  # Por defecto todos son clientes
                 telefono=data['phone'],
                 direccion=data['address'],
-                ciudad=data['city'],
-                codigo_postal=data.get('postalCode', '')
+                ciudad=data.get('city', '')
             )
             
             # Crear token de autenticación
@@ -107,8 +106,14 @@ def login_user(request):
     try:
         data = request.data if hasattr(request, 'data') else json.loads(request.body)
         
+        print(f"\n=== DEBUG LOGIN ===")
+        print(f"Data recibida: {data}")
+        
         username = data.get('username') or data.get('email')
         password = data.get('password')
+        
+        print(f"Username extraído: {username}")
+        print(f"Password presente: {bool(password)}")
         
         if not username or not password:
             return Response({
@@ -117,7 +122,9 @@ def login_user(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Intentar autenticar
+        print(f"Intentando autenticar con username={username}")
         user = authenticate(username=username, password=password)
+        print(f"Resultado autenticación: {user}")
         
         if user is not None:
             if user.is_active:
@@ -147,6 +154,9 @@ def login_user(request):
                         'first_name': user.first_name,
                         'last_name': user.last_name,
                         'role': role,
+                        'telefono': profile.telefono if profile.telefono else '',
+                        'direccion': profile.direccion if profile.direccion else '',
+                        'ciudad': profile.ciudad if profile.ciudad else '',
                         'is_superuser': user.is_superuser
                     }
                 }, status=status.HTTP_200_OK)
@@ -193,6 +203,78 @@ def logout_user(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """
+    Cambiar contraseña del usuario
+    """
+    try:
+        data = request.data if hasattr(request, 'data') else json.loads(request.body)
+        
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        
+        if not current_password or not new_password:
+            return Response({
+                'success': False,
+                'error': 'Contraseña actual y nueva contraseña son requeridas'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verificar contraseña actual
+        if not request.user.check_password(current_password):
+            return Response({
+                'success': False,
+                'error': 'La contraseña actual es incorrecta'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validar longitud de nueva contraseña
+        if len(new_password) < 8:
+            return Response({
+                'success': False,
+                'error': 'La nueva contraseña debe tener al menos 8 caracteres'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Cambiar contraseña
+        request.user.set_password(new_password)
+        request.user.save()
+        
+        return Response({
+            'success': True,
+            'message': 'Contraseña cambiada exitosamente'
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': f'Error al cambiar contraseña: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    """
+    Eliminar cuenta del usuario
+    """
+    try:
+        user = request.user
+        
+        # Eliminar el usuario (esto eliminará el perfil y token automáticamente)
+        user.delete()
+        
+        return Response({
+            'success': True,
+            'message': 'Cuenta eliminada exitosamente'
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': f'Error al eliminar cuenta: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def user_profile(request):
@@ -217,7 +299,6 @@ def user_profile(request):
                     'telefono': profile.telefono,
                     'direccion': profile.direccion,
                     'ciudad': profile.ciudad,
-                    'codigo_postal': profile.codigo_postal,
                     'fecha_creacion': profile.fecha_creacion,
                     'fecha_actualizacion': profile.fecha_actualizacion,
                 }
@@ -251,8 +332,6 @@ def user_profile(request):
                 profile.direccion = data['direccion']
             if 'ciudad' in data:
                 profile.ciudad = data['ciudad']
-            if 'codigo_postal' in data:
-                profile.codigo_postal = data['codigo_postal']
             
             profile.save()
             
@@ -270,7 +349,6 @@ def user_profile(request):
                     'telefono': profile.telefono,
                     'direccion': profile.direccion,
                     'ciudad': profile.ciudad,
-                    'codigo_postal': profile.codigo_postal,
                 }
             }, status=status.HTTP_200_OK)
             

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Cliente, Conductor, Vehiculo, Ruta, Envio, SeguimientoEnvio, Admin
+from .models import Conductor, Vehiculo, Ruta, Envio, SeguimientoEnvio, Admin
 from user_management.models import UserProfile, Categoria, Producto, Carrito, CarritoItem, Pedido, PedidoItem
 
 
@@ -19,13 +19,22 @@ class ClienteSerializer(serializers.ModelSerializer):
         return full_name if full_name else obj.username
     
     def get_telefono(self, obj):
-        return getattr(obj.userprofile, 'telefono', '') if hasattr(obj, 'userprofile') else ''
+        try:
+            return obj.userprofile.telefono if obj.userprofile.telefono else ''
+        except (AttributeError, UserProfile.DoesNotExist):
+            return ''
     
     def get_ciudad(self, obj):
-        return getattr(obj.userprofile, 'ciudad', '') if hasattr(obj, 'userprofile') else ''
+        try:
+            return obj.userprofile.ciudad if obj.userprofile.ciudad else ''
+        except (AttributeError, UserProfile.DoesNotExist):
+            return ''
     
     def get_direccion(self, obj):
-        return getattr(obj.userprofile, 'direccion', '') if hasattr(obj, 'userprofile') else ''
+        try:
+            return obj.userprofile.direccion if obj.userprofile.direccion else ''
+        except (AttributeError, UserProfile.DoesNotExist):
+            return ''
     
     class Meta:
         model = User
@@ -82,17 +91,26 @@ class SeguimientoEnvioSerializer(serializers.ModelSerializer):
 
 
 class EnvioSerializer(serializers.ModelSerializer):
-    cliente_nombre = serializers.CharField(source='cliente.nombre', read_only=True)
+    cliente_nombre = serializers.SerializerMethodField()
+    cliente_email = serializers.EmailField(source='cliente.email', read_only=True)
     ruta_nombre = serializers.CharField(source='ruta.nombre', read_only=True)
     vehiculo_placa = serializers.CharField(source='vehiculo.placa', read_only=True)
     conductor_nombre = serializers.CharField(source='conductor.nombre', read_only=True)
     seguimientos = SeguimientoEnvioSerializer(many=True, read_only=True)
     dias_transito = serializers.ReadOnlyField()
     
+    def get_cliente_nombre(self, obj):
+        return obj.cliente.get_full_name() or obj.cliente.username
+    
     class Meta:
         model = Envio
         fields = '__all__'
         read_only_fields = ('fecha_creacion', 'fecha_actualizacion')
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['cliente_nombre'] = self.get_cliente_nombre(instance)
+        return representation
 
 
 class EnvioCreateSerializer(serializers.ModelSerializer):
@@ -105,8 +123,11 @@ class EnvioCreateSerializer(serializers.ModelSerializer):
 
 class EnvioListSerializer(serializers.ModelSerializer):
     """Serializer para listar envíos con información básica"""
-    cliente_nombre = serializers.CharField(source='cliente.nombre', read_only=True)
+    cliente_nombre = serializers.SerializerMethodField()
     ruta_info = serializers.SerializerMethodField()
+    
+    def get_cliente_nombre(self, obj):
+        return obj.cliente.get_full_name() or obj.cliente.username
     
     class Meta:
         model = Envio
@@ -256,6 +277,7 @@ class CarritoSerializer(serializers.ModelSerializer):
 
 class PedidoItemSerializer(serializers.ModelSerializer):
     producto_nombre = serializers.CharField(source='producto.nombre', read_only=True)
+    imagen_url = serializers.CharField(source='producto.imagen_url', read_only=True)
     
     class Meta:
         model = PedidoItem
@@ -263,13 +285,16 @@ class PedidoItemSerializer(serializers.ModelSerializer):
 
 class PedidoSerializer(serializers.ModelSerializer):
     items = PedidoItemSerializer(many=True, read_only=True)
-    usuario_nombre = serializers.CharField(source='usuario.get_full_name', read_only=True)
+    usuario_nombre = serializers.SerializerMethodField()
     usuario_email = serializers.EmailField(source='usuario.email', read_only=True)
     conductor_info = serializers.SerializerMethodField()
     
     class Meta:
         model = Pedido
         fields = '__all__'
+    
+    def get_usuario_nombre(self, obj):
+        return obj.usuario.get_full_name() or obj.usuario.username
     
     def get_conductor_info(self, obj):
         if obj.conductor:

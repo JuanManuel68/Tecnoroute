@@ -74,7 +74,7 @@ class AuthView(APIView):
                 'telefono': profile.telefono,
                 'direccion': profile.direccion,
                 'ciudad': profile.ciudad,
-                'codigo_postal': profile.codigo_postal
+                'date_joined': user.date_joined.isoformat()
             }
             
             # Datos específicos según el rol
@@ -141,7 +141,7 @@ class RegisterView(APIView):
                 'telefono': profile.telefono,
                 'direccion': profile.direccion,
                 'ciudad': profile.ciudad,
-                'codigo_postal': profile.codigo_postal
+                'date_joined': user.date_joined.isoformat()
             }
             
             # Agregar datos específicos según el rol
@@ -378,7 +378,10 @@ class PedidoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Filtrar pedidos según el tipo de usuario
-        user_profile = getattr(self.request.user, 'userprofile', None)
+        try:
+            user_profile = self.request.user.userprofile
+        except AttributeError:
+            user_profile = None
         
         print(f"\n=== DEBUG get_queryset ===")
         print(f"User: {self.request.user.email}")
@@ -475,7 +478,10 @@ class PedidoViewSet(viewsets.ModelViewSet):
         conductor_id = request.data.get('conductor_id')
         
         # Verificar que sea admin
-        user_profile = getattr(request.user, 'userprofile', None)
+        try:
+            user_profile = request.user.userprofile
+        except AttributeError:
+            user_profile = None
         if not user_profile or user_profile.role != 'admin':
             return Response({'error': 'Solo administradores pueden asignar conductores'}, status=status.HTTP_403_FORBIDDEN)
         
@@ -510,7 +516,10 @@ class PedidoViewSet(viewsets.ModelViewSet):
         nuevo_estado = request.data.get('estado')
         
         # Verificar permisos según el rol
-        user_profile = getattr(request.user, 'userprofile', None)
+        try:
+            user_profile = request.user.userprofile
+        except AttributeError:
+            user_profile = None
         if not user_profile:
             return Response({'error': 'Usuario no tiene perfil'}, status=status.HTTP_403_FORBIDDEN)
         
@@ -557,7 +566,10 @@ class PedidoViewSet(viewsets.ModelViewSet):
         pedido = self.get_object()
         
         # Solo el propietario del pedido puede editarlo (excepto admins)
-        user_profile = getattr(request.user, 'userprofile', None)
+        try:
+            user_profile = request.user.userprofile
+        except AttributeError:
+            user_profile = None
         if not user_profile:
             return Response({'error': 'Usuario no tiene perfil'}, status=status.HTTP_403_FORBIDDEN)
         
@@ -609,7 +621,10 @@ class PedidoViewSet(viewsets.ModelViewSet):
         pedido = self.get_object()
         
         # Solo el propietario del pedido puede eliminarlo (excepto admins)
-        user_profile = getattr(request.user, 'userprofile', None)
+        try:
+            user_profile = request.user.userprofile
+        except AttributeError:
+            user_profile = None
         if not user_profile:
             return Response({'error': 'Usuario no tiene perfil'}, status=status.HTTP_403_FORBIDDEN)
         

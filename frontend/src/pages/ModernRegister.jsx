@@ -17,12 +17,18 @@ import { useAuth } from '../context/AuthContext';
 const ModernRegister = () => {
   const { register, getDashboardRoute } = useAuth();
   
-  // Ciudades disponibles con sus códigos postales
+  // Ciudades disponibles
   const cities = [
-    { name: 'Bogotá', postalCode: '110111' },
-    { name: 'Soacha', postalCode: '250052' },
-    { name: 'Chía', postalCode: '250001' },
-    { name: 'Zipaquirá', postalCode: '250252' }
+    'Bogotá',
+    'Soacha',
+    'Chía',
+    'Zipaquirá',
+    'Cota',
+    'Funza',
+    'Mosquera',
+    'Madrid',
+    'Facatativá',
+    'Cajicá'
   ];
   
   const [formData, setFormData] = useState({
@@ -33,7 +39,6 @@ const ModernRegister = () => {
     phone: '',
     address: '',
     city: '',
-    postalCode: '',
     role: 'customer', // Always customer
     acceptTerms: false
   });
@@ -45,21 +50,10 @@ const ModernRegister = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    let updatedData = { 
-      [name]: type === 'checkbox' ? checked : value 
-    };
-    
-    // Auto-populate postal code when city is selected
-    if (name === 'city') {
-      const selectedCity = cities.find(city => city.name === value);
-      if (selectedCity) {
-        updatedData.postalCode = selectedCity.postalCode;
-      }
-    }
     
     setFormData(prev => ({ 
       ...prev, 
-      ...updatedData
+      [name]: type === 'checkbox' ? checked : value
     }));
     
     // Clear error when user starts typing
@@ -348,8 +342,8 @@ const ModernRegister = () => {
                         >
                           <option value="">Selecciona tu ciudad</option>
                           {cities.map((city) => (
-                            <option key={city.name} value={city.name}>
-                              {city.name}
+                            <option key={city} value={city}>
+                              {city}
                             </option>
                           ))}
                         </select>
@@ -361,7 +355,7 @@ const ModernRegister = () => {
                     </div>
                   </div>
 
-                  <div className="mt-6 grid md:grid-cols-2 gap-6">
+                  <div className="mt-6">
                     <div>
                       <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
                         Dirección *
@@ -384,21 +378,6 @@ const ModernRegister = () => {
                       {errors.address && (
                         <p className="mt-1 text-sm text-red-600">{errors.address}</p>
                       )}
-                    </div>
-
-                    <div>
-                      <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                        Código Postal *
-                      </label>
-                      <input
-                        id="postalCode"
-                        name="postalCode"
-                        type="text"
-                        value={formData.postalCode}
-                        readOnly
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
-                        placeholder="Selecciona una ciudad"
-                      />
                     </div>
                   </div>
                 </div>

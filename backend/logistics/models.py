@@ -27,46 +27,6 @@ class Admin(models.Model):
         return f"{self.nombre} - {self.get_nivel_acceso_display()}"
 
 
-# NOTA: Cliente ahora usa UserProfile de user_management
-# Este modelo se mantiene solo para compatibilidad con envios existentes
-# Los nuevos clientes deben usar User + UserProfile con role='customer'
-class Cliente(models.Model):
-    # Referenciar al User directamente para unificar
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Usuario")
-    nombre = models.CharField(max_length=200, verbose_name="Nombre")
-    email = models.EmailField(unique=True, verbose_name="Correo Electrónico")
-    telefono = models.CharField(max_length=20, verbose_name="Teléfono")
-    direccion = models.TextField(verbose_name="Dirección")
-    ciudad = models.CharField(max_length=100, verbose_name="Ciudad")
-    codigo_postal = models.CharField(max_length=10, verbose_name="Código Postal")
-    fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Registro")
-    activo = models.BooleanField(default=True, verbose_name="Activo")
-
-    class Meta:
-        verbose_name = "Cliente"
-        verbose_name_plural = "Clientes"
-        ordering = ['-fecha_registro']
-
-    def __str__(self):
-        return self.nombre
-    
-    @classmethod
-    def from_user(cls, user):
-        """Crea o retorna un Cliente desde un User"""
-        try:
-            return cls.objects.get(user=user)
-        except cls.DoesNotExist:
-            profile = user.userprofile if hasattr(user, 'userprofile') else None
-            return cls.objects.create(
-                user=user,
-                nombre=user.get_full_name() or user.username,
-                email=user.email,
-                telefono=profile.telefono if profile else '',
-                direccion=profile.direccion if profile else '',
-                ciudad=profile.ciudad if profile else '',
-                codigo_postal=profile.codigo_postal if profile else ''
-            )
-
 
 class Conductor(models.Model):
     ESTADO_CHOICES = [
@@ -203,7 +163,7 @@ class Envio(models.Model):
     ]
     
     numero_guia = models.CharField(max_length=50, unique=True, verbose_name="Número de Guía")
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, verbose_name="Cliente")
+    cliente = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Cliente")
     ruta = models.ForeignKey(Ruta, on_delete=models.CASCADE, verbose_name="Ruta")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Vehículo")
     conductor = models.ForeignKey(Conductor, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Conductor")
@@ -241,7 +201,8 @@ class Envio(models.Model):
         ordering = ['-fecha_creacion']
 
     def __str__(self):
-        return f"Envío {self.numero_guia} - {self.cliente.nombre}"
+        cliente_nombre = self.cliente.get_full_name() or self.cliente.username
+        return f"Envío {self.numero_guia} - {cliente_nombre}"
 
     @property
     def dias_transito(self):

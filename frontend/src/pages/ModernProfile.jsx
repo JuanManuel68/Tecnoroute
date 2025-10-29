@@ -10,7 +10,6 @@ import {
   ShoppingBagIcon,
   HeartIcon,
   CogIcon,
-  PhotoIcon,
   ExclamationTriangleIcon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
@@ -20,25 +19,37 @@ const ModernProfile = () => {
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   
-  // Ciudades disponibles con sus códigos postales
+  // Ciudades disponibles
   const cities = [
-    { name: 'Bogotá', postalCode: '110111' },
-    { name: 'Soacha', postalCode: '250052' },
-    { name: 'Chía', postalCode: '250001' },
-    { name: 'Zipaquirá', postalCode: '250252' }
+    'Bogotá',
+    'Soacha',
+    'Chía',
+    'Zipaquirá',
+    'Cota',
+    'Funza',
+    'Mosquera',
+    'Madrid',
+    'Facatativá',
+    'Cajicá'
   ];
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
-    city: '',
-    postalCode: ''
+    city: ''
   });
   const [activeTab, setActiveTab] = useState('profile');
   const [errors, setErrors] = useState({});
-  const [profileImage, setProfileImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -47,48 +58,21 @@ const ModernProfile = () => {
         email: user.email || '',
         phone: user.phone || '',
         address: user.address || '',
-        city: user.city || '',
-        postalCode: user.postalCode || ''
+        city: user.city || ''
       });
     }
   }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    let updatedData = { [name]: value };
     
-    // Auto-populate postal code when city is selected
-    if (name === 'city') {
-      const selectedCity = cities.find(city => city.name === value);
-      if (selectedCity) {
-        updatedData.postalCode = selectedCity.postalCode;
-      }
-    }
-    
-    setFormData(prev => ({ ...prev, ...updatedData }));
+    setFormData(prev => ({ ...prev, [name]: value }));
     // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        setErrors(prev => ({ ...prev, image: 'La imagen no debe superar los 5MB' }));
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result);
-        setProfileImage(file);
-        setErrors(prev => ({ ...prev, image: '' }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -119,15 +103,57 @@ const ModernProfile = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateForm()) {
       return;
     }
     
-    // Aquí actualizarías los datos del usuario en la API
-    // await updateUserProfile(formData, profileImage);
-    setIsEditing(false);
-    // Simular actualización exitosa
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      // Separar nombre completo en first_name y last_name
+      const nameParts = formData.name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const response = await fetch('http://localhost:8000/api/auth/profile/', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          email: formData.email,
+          telefono: formData.phone,
+          direccion: formData.address,
+          ciudad: formData.city
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Actualizar el contexto de usuario
+        updateUser({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city
+        });
+        
+        setSuccessMessage('Perfil actualizado exitosamente');
+        setIsEditing(false);
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrors({ general: data.error || 'Error al actualizar el perfil' });
+      }
+    } catch (error) {
+      console.error('Error actualizando perfil:', error);
+      setErrors({ general: 'Error de conexión' });
+    }
   };
 
   const handleCancel = () => {
@@ -137,12 +163,9 @@ const ModernProfile = () => {
       email: user?.email || '',
       phone: user?.phone || '',
       address: user?.address || '',
-      city: user?.city || '',
-      postalCode: user?.postalCode || ''
+      city: user?.city || ''
     });
     setErrors({});
-    setPreviewImage(null);
-    setProfileImage(null);
     setIsEditing(false);
   };
 
@@ -159,69 +182,50 @@ const ModernProfile = () => {
   // Favoritos del usuario
   const [favoriteProducts, setFavoriteProducts] = useState([]);
   
+  // Estadísticas del usuario
+  const [userStats, setUserStats] = useState({
+    totalOrders: 0,
+    totalSpent: 0,
+    memberSince: null
+  });
+  
   useEffect(() => {
     // Cargar pedidos del usuario desde la API
   const loadUserOrders = async () => {
     try {
       if (!user?.id) return;
       
-      const response = await fetch(`http://localhost:8000/api/users/${user.id}/orders/`);
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`http://localhost:8000/api/pedidos/`, {
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (response.ok) {
         const orders = await response.json();
         setRecentOrders(orders);
+        
+        // Calcular estadísticas desde los pedidos
+        const totalOrders = orders.length;
+        const totalSpent = orders.reduce((sum, order) => {
+          const orderTotal = typeof order.total === 'number' ? order.total : parseFloat(order.total || 0);
+          return sum + orderTotal;
+        }, 0);
+        
+        setUserStats({
+          totalOrders,
+          totalSpent,
+          memberSince: user?.date_joined || null
+        });
       } else {
-        // Fallback: datos de ejemplo incluyendo pedidos entregados
-        setRecentOrders([
-          {
-            id: 1,
-            number: 'TR-2024-001',
-            date: '2024-01-10',
-            total: 2599.99,
-            status: 'entregado',
-            items: [
-              {
-                id: 1,
-                nombre: 'Refrigerador Samsung 28 pies',
-                precio: 2599.99,
-                cantidad: 1,
-                imagen_url: 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=300&h=300&fit=crop'
-              }
-            ]
-          },
-          {
-            id: 2,
-            number: 'TR-2024-002',
-            date: '2024-01-15',
-            total: 1899.99,
-            status: 'entregado',
-            items: [
-              {
-                id: 2,
-                nombre: 'Lavadora LG 15 kg',
-                precio: 1899.99,
-                cantidad: 1,
-                imagen_url: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=300&h=300&fit=crop'
-              }
-            ]
-          },
-          {
-            id: 3,
-            number: 'TR-2024-003',
-            date: '2024-01-20',
-            total: 899.99,
-            status: 'en_transito',
-            items: [
-              {
-                id: 3,
-                nombre: 'Microondas Panasonic 1.2 pies',
-                precio: 899.99,
-                cantidad: 1,
-                imagen_url: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=300&h=300&fit=crop'
-              }
-            ]
-          }
-        ]);
+        setRecentOrders([]);
+        setUserStats({
+          totalOrders: 0,
+          totalSpent: 0,
+          memberSince: user?.date_joined || null
+        });
       }
     } catch (error) {
       console.warn('No se pudieron cargar los pedidos:', error);
@@ -235,32 +239,28 @@ const ModernProfile = () => {
   
   const loadFavoriteProducts = async () => {
     try {
-      if (!user?.id) return;
+      // Cargar IDs de favoritos desde localStorage
+      const favoritesJSON = localStorage.getItem('favorites');
+      if (!favoritesJSON) {
+        setFavoriteProducts([]);
+        return;
+      }
       
-      // En una implementación real, aquí cargarías los productos favoritos del usuario desde la API
-      // const response = await fetch(`http://localhost:8000/api/users/${user.id}/favorites/`);
+      const favoriteIds = JSON.parse(favoritesJSON);
+      if (!Array.isArray(favoriteIds) || favoriteIds.length === 0) {
+        setFavoriteProducts([]);
+        return;
+      }
       
-      // Por ahora, simulamos algunos productos favoritos de ejemplo
-      const mockFavorites = [
-        {
-          id: 1,
-          nombre: 'Refrigerador Samsung 28 pies',
-          precio: 2599.99,
-          imagen_url: 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=300&h=300&fit=crop',
-          categoria: 'Electrodomésticos',
-          fecha_agregado: new Date().toISOString()
-        },
-        {
-          id: 2,
-          nombre: 'Lavadora LG 15 kg',
-          precio: 1899.99,
-          imagen_url: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=300&h=300&fit=crop',
-          categoria: 'Electrodomésticos',
-          fecha_agregado: new Date().toISOString()
-        }
-      ];
-      
-      setFavoriteProducts(mockFavorites);
+      // Cargar detalles de productos favoritos desde la API
+      const response = await fetch('http://localhost:8000/api/productos/');
+      if (response.ok) {
+        const allProducts = await response.json();
+        const favorites = allProducts.filter(p => favoriteIds.includes(p.id));
+        setFavoriteProducts(favorites);
+      } else {
+        setFavoriteProducts([]);
+      }
     } catch (error) {
       console.warn('No se pudieron cargar los productos favoritos:', error);
       setFavoriteProducts([]);
@@ -282,15 +282,107 @@ const ModernProfile = () => {
 
   const getStatusText = (status) => {
     switch (status) {
+      case 'entregado':
       case 'delivered':
         return 'Entregado';
+      case 'en_curso':
       case 'shipped':
-        return 'Enviado';
+        return 'En Curso';
+      case 'pendiente':
       case 'processing':
-        return 'Procesando';
+        return 'Pendiente';
+      case 'confirmado':
+        return 'Confirmado';
+      case 'cancelado':
+        return 'Cancelado';
       default:
         return status;
     }
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      setErrors({});
+      
+      // Validaciones
+      if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+        setErrors({ password: 'Todos los campos son obligatorios' });
+        return;
+      }
+      
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setErrors({ password: 'Las contraseñas no coinciden' });
+        return;
+      }
+      
+      if (passwordData.newPassword.length < 8) {
+        setErrors({ password: 'La contraseña debe tener al menos 8 caracteres' });
+        return;
+      }
+      
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://localhost:8000/api/auth/change-password/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          current_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSuccessMessage('Contraseña cambiada exitosamente');
+        setShowChangePasswordModal(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrors({ password: data.error || 'Error al cambiar la contraseña' });
+      }
+    } catch (error) {
+      setErrors({ password: 'Error de conexión' });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://localhost:8000/api/auth/delete-account/', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        // Limpiar sesión y redirigir
+        localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
+        window.location.href = '/';
+      } else {
+        setErrors({ delete: 'Error al eliminar la cuenta' });
+      }
+    } catch (error) {
+      setErrors({ delete: 'Error de conexión' });
+    }
+  };
+  
+  const removeFavorite = (productId) => {
+    const favoritesJSON = localStorage.getItem('favorites');
+    if (!favoritesJSON) return;
+    
+    const favoriteIds = JSON.parse(favoritesJSON);
+    const newFavorites = favoriteIds.filter(id => id !== productId);
+    
+    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+    
+    // Actualizar el estado local
+    setFavoriteProducts(prev => prev.filter(p => p.id !== productId));
   };
 
   return (
@@ -299,47 +391,14 @@ const ModernProfile = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
-            <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center overflow-hidden">
-                {previewImage || user?.profileImage ? (
-                  <img 
-                    src={previewImage || user?.profileImage} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <UserIcon className="w-10 h-10 text-white" />
-                )}
-              </div>
-              {isEditing && (
-                <>
-                  <label 
-                    htmlFor="profile-image" 
-                    className="absolute bottom-0 right-0 bg-primary-600 hover:bg-primary-700 rounded-full p-2 cursor-pointer shadow-lg transition-colors"
-                  >
-                    <PhotoIcon className="w-4 h-4 text-white" />
-                  </label>
-                  <input
-                    id="profile-image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </>
-              )}
+            <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
+              <UserIcon className="w-10 h-10 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
                 Hola, {user?.name || 'Usuario'}
               </h1>
               <p className="text-gray-600">Gestiona tu perfil y pedidos</p>
-              {errors.image && (
-                <p className="text-red-600 text-sm mt-1 flex items-center">
-                  <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
-                  {errors.image}
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -375,6 +434,16 @@ const ModernProfile = () => {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="card p-8">
+                {successMessage && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+                    {successMessage}
+                  </div>
+                )}
+                {errors.general && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                    {errors.general}
+                  </div>
+                )}
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">Información Personal</h2>
                   {!isEditing ? (
@@ -517,8 +586,8 @@ const ModernProfile = () => {
                         >
                           <option value="">Selecciona tu ciudad</option>
                           {cities.map((city) => (
-                            <option key={city.name} value={city.name}>
-                              {city.name}
+                            <option key={city} value={city}>
+                              {city}
                             </option>
                           ))}
                         </select>
@@ -564,20 +633,6 @@ const ModernProfile = () => {
                       </p>
                     )}
                   </div>
-
-                  <div className="w-full md:w-1/2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Código Postal *
-                    </label>
-                    <input
-                      type="text"
-                      name="postalCode"
-                      value={formData.postalCode}
-                      readOnly
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
-                      placeholder="Selecciona una ciudad"
-                    />
-                  </div>
                 </form>
               </div>
             )}
@@ -594,15 +649,15 @@ const ModernProfile = () => {
                         <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                           <div className="flex items-center justify-between mb-4">
                             <div>
-                              <h3 className="font-semibold text-gray-900">{order.number}</h3>
-                              <p className="text-sm text-gray-600">{order.date}</p>
+                              <h3 className="font-semibold text-gray-900">{order.numero_pedido || order.number}</h3>
+                              <p className="text-sm text-gray-600">{new Date(order.fecha_creacion || order.date).toLocaleDateString('es-ES')}</p>
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-lg text-primary-600">
-                                ${order.total?.toFixed(2) || order.total}
+                                ${typeof order.total === 'number' ? order.total.toFixed(2) : parseFloat(order.total || 0).toFixed(2)}
                               </p>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                                {getStatusText(order.status)}
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.estado || order.status)}`}>
+                                {getStatusText(order.estado || order.status)}
                               </span>
                             </div>
                           </div>
@@ -616,15 +671,15 @@ const ModernProfile = () => {
                                   <div key={item.id} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
                                     <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                                       <img
-                                        src={item.imagen_url || 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=100&h=100&fit=crop'}
-                                        alt={item.nombre}
+                                        src={item.producto?.imagen_url || item.imagen_url || 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=100&h=100&fit=crop'}
+                                        alt={item.producto_nombre || item.nombre}
                                         className="w-full h-full object-cover"
                                       />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-gray-900 truncate">{item.nombre}</p>
+                                      <p className="text-sm font-medium text-gray-900 truncate">{item.producto_nombre || item.nombre}</p>
                                       <p className="text-xs text-gray-600">
-                                        Cantidad: {item.cantidad} × ${item.precio?.toFixed(2) || item.precio}
+                                        Cantidad: {item.cantidad} × ${typeof item.precio_unitario === 'number' ? item.precio_unitario.toFixed(2) : parseFloat(item.precio_unitario || item.precio || 0).toFixed(2)}
                                       </p>
                                     </div>
                                   </div>
@@ -675,7 +730,11 @@ const ModernProfile = () => {
                             <span className="text-lg font-bold text-primary-600">
                               ${product.precio.toLocaleString('es-CO')}
                             </span>
-                            <button className="text-red-500 hover:text-red-700 transition-colors">
+                            <button 
+                              onClick={() => removeFavorite(product.id)}
+                              className="text-red-500 hover:text-red-700 transition-colors"
+                              title="Quitar de favoritos"
+                            >
                               <HeartIcon className="w-5 h-5 fill-current" />
                             </button>
                           </div>
@@ -745,11 +804,22 @@ const ModernProfile = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Cuenta</h3>
                     <div className="space-y-3">
-                      <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                      {successMessage && (
+                        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                          {successMessage}
+                        </div>
+                      )}
+                      <button 
+                        onClick={() => setShowChangePasswordModal(true)}
+                        className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                      >
                         Cambiar contraseña
                       </button>
                       <br />
-                      <button className="text-red-600 hover:text-red-700 text-sm font-medium">
+                      <button 
+                        onClick={() => setShowDeleteAccountModal(true)}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      >
                         Eliminar cuenta
                       </button>
                     </div>
@@ -766,19 +836,23 @@ const ModernProfile = () => {
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Pedidos totales:</span>
-                  <span className="font-semibold">3</span>
+                  <span className="font-semibold">{userStats.totalOrders}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total gastado:</span>
-                  <span className="font-semibold text-primary-600">$2,399.97</span>
+                  <span className="font-semibold text-primary-600">
+                    ${userStats.totalSpent.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Productos favoritos:</span>
-                  <span className="font-semibold">0</span>
+                  <span className="font-semibold">{favoriteProducts.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Miembro desde:</span>
-                  <span className="font-semibold">Enero 2024</span>
+                  <span className="font-semibold">
+                    {userStats.memberSince ? new Date(userStats.memberSince).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) : 'Reciente'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -790,14 +864,23 @@ const ModernProfile = () => {
                   ¿Necesitas ayuda con tu cuenta o pedidos?
                 </p>
                 <div className="space-y-2">
-                  <button className="w-full text-left text-sm text-primary-600 hover:text-primary-700">
+                  <button 
+                    onClick={() => window.location.href = '/contact'}
+                    className="w-full text-left text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                  >
                     Centro de ayuda
                   </button>
-                  <button className="w-full text-left text-sm text-primary-600 hover:text-primary-700">
+                  <button 
+                    onClick={() => window.location.href = '/contact'}
+                    className="w-full text-left text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                  >
                     Contactar soporte
                   </button>
-                  <button className="w-full text-left text-sm text-primary-600 hover:text-primary-700">
-                    Preguntas frecuentes
+                  <button 
+                    onClick={() => window.open('mailto:soporte@tecnoroute.com?subject=Consulta desde perfil', '_blank')}
+                    className="w-full text-left text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                  >
+                    Enviar email
                   </button>
                 </div>
               </div>
@@ -805,6 +888,106 @@ const ModernProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Cambiar Contraseña */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Cambiar Contraseña</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contraseña Actual
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Ingresa tu contraseña actual"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nueva Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Mínimo 8 caracteres"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirmar Nueva Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Repite la nueva contraseña"
+                />
+              </div>
+              {errors.password && (
+                <p className="text-red-600 text-sm">{errors.password}</p>
+              )}
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleChangePassword}
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg transition-colors"
+                >
+                  Cambiar Contraseña
+                </button>
+                <button
+                  onClick={() => {
+                    setShowChangePasswordModal(false);
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                    setErrors({});
+                  }}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Cuenta */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Eliminar Cuenta</h3>
+            <p className="text-gray-600 mb-6">
+              ¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos, pedidos e historial.
+            </p>
+            {errors.delete && (
+              <p className="text-red-600 text-sm mb-4">{errors.delete}</p>
+            )}
+            <div className="flex space-x-3">
+              <button
+                onClick={handleDeleteAccount}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors"
+              >
+                Sí, Eliminar Mi Cuenta
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteAccountModal(false);
+                  setErrors({});
+                }}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

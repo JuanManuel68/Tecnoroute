@@ -10,6 +10,8 @@ urlpatterns = [
     path('auth/login/', views.login_user, name='login'),
     path('auth/logout/', views.logout_user, name='logout'),
     path('auth/profile/', views.user_profile, name='profile'),
+    path('auth/change-password/', views.change_password, name='change-password'),
+    path('auth/delete-account/', views.delete_account, name='delete-account'),
     
     # URLs de API REST
     path('', include(router.urls)),
