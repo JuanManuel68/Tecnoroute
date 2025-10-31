@@ -542,25 +542,12 @@ const ModernDashboard = () => {
               )}
             </div>
 
-            {/* Quick Actions */}
-            <div className="card p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Acciones Rápidas</h3>
-              <div className="space-y-3">
-                <button className="w-full btn-primary text-left">
-                  + Nuevo {isAdmin() ? 'Pedido' : 'Envío'}
-                </button>
-                <button className="w-full btn-secondary text-left">
-                  📊 Ver Reportes
-                </button>
-                <button className="w-full btn-secondary text-left">
-                  ⚙️ Configuración
-                </button>
+            
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+
   );
 };
 
