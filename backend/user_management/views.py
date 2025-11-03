@@ -13,7 +13,7 @@ from rest_framework.authtoken.models import Token
 from django.db import transaction
 import json
 
-from .models import UserProfile
+from .models import UserProfile, Contacto
 
 
 @csrf_exempt
@@ -26,42 +26,77 @@ def register_user(request):
     try:
         data = request.data if hasattr(request, 'data') else json.loads(request.body)
         
-        # Validar datos requeridos
-        required_fields = ['name', 'email', 'password', 'phone', 'address']
+        # Validar datos requeridos con mensajes amigables
+        field_names = {
+            'nombres': 'Nombres',
+            'apellidos': 'Apellidos',
+            'email': 'Correo electrónico',
+            'password': 'Contraseña',
+            'phone': 'Teléfono',
+            'address': 'Dirección'
+        }
+        
+        required_fields = ['nombres', 'apellidos', 'email', 'password', 'phone', 'address']
         for field in required_fields:
-            if not data.get(field):
+            if not data.get(field) or not data.get(field).strip():
+                field_label = field_names.get(field, field)
                 return Response({
                     'success': False,
-                    'error': f'El campo {field} es requerido'
+                    'error': f'El campo "{field_label}" es obligatorio'
                 }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Verificar si el email ya existe
-        if User.objects.filter(email=data['email']).exists():
+        # Validar formato de email
+        email = data.get('email', '').strip()
+        if not email or '@' not in email or '.' not in email.split('@')[-1]:
             return Response({
                 'success': False,
-                'error': 'Este email ya está registrado'
+                'error': 'Por favor, ingresa un correo electrónico válido'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verificar si el email ya existe
+        if User.objects.filter(email=email).exists():
+            return Response({
+                'success': False,
+                'error': 'Este correo electrónico ya está registrado. Por favor, usa otro o inicia sesión.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validar longitud de contraseña
+        password = data.get('password', '')
+        if len(password) < 6:
+            return Response({
+                'success': False,
+                'error': 'La contraseña debe tener al menos 6 caracteres'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validar teléfono
+        phone = data.get('phone', '').strip()
+        if len(phone) < 7:
+            return Response({
+                'success': False,
+                'error': 'Por favor, ingresa un número de teléfono válido'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Crear usuario y perfil en una transacción
         with transaction.atomic():
-            # Separar nombre y apellido
-            name_parts = data['name'].strip().split()
-            first_name = name_parts[0] if name_parts else ''
-            last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+            # Obtener nombres y apellidos
+            nombres = data.get('nombres', '').strip()
+            apellidos = data.get('apellidos', '').strip()
             
             # Crear usuario Django
             user = User.objects.create_user(
                 username=data['email'],  # Usar email como username
                 email=data['email'],
                 password=data['password'],
-                first_name=first_name,
-                last_name=last_name,
+                first_name=nombres,
+                last_name=apellidos,
             )
             
             # Crear perfil de usuario
             UserProfile.objects.create(
                 user=user,
                 role='customer',  # Por defecto todos son clientes
+                nombres=nombres,
+                apellidos=apellidos,
                 telefono=data['phone'],
                 direccion=data['address'],
                 ciudad=data.get('city', '')
@@ -168,7 +203,7 @@ def login_user(request):
         else:
             return Response({
                 'success': False,
-                'error': 'Credenciales inválidas'
+                'error': 'Correo o contraseña incorrectos. Por favor, verifica tus datos.'
             }, status=status.HTTP_401_UNAUTHORIZED)
             
     except json.JSONDecodeError:
@@ -356,4 +391,53 @@ def user_profile(request):
         return Response({
             'success': False,
             'error': f'Error procesando perfil: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def contact_message(request):
+    """
+    Guardar mensaje de contacto de un usuario (autenticado o anónimo)
+    """
+    try:
+        data = request.data if hasattr(request, 'data') else json.loads(request.body)
+        
+        # Validar datos requeridos
+        required_fields = ['nombres', 'apellidos', 'email', 'asunto', 'mensaje']
+        for field in required_fields:
+            if not data.get(field):
+                return Response({
+                    'success': False,
+                    'error': f'El campo {field} es requerido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Crear mensaje de contacto
+        contacto = Contacto.objects.create(
+            usuario=request.user if request.user.is_authenticated else None,
+            nombres=data['nombres'],
+            apellidos=data['apellidos'],
+            email=data['email'],
+            asunto=data['asunto'],
+            mensaje=data['mensaje']
+        )
+        
+        return Response({
+            'success': True,
+            'message': 'Mensaje enviado exitosamente. Nos pondremos en contacto pronto.',
+            'contacto': {
+                'id': contacto.id,
+                'fecha_envio': contacto.fecha_envio
+            }
+        }, status=status.HTTP_201_CREATED)
+        
+    except json.JSONDecodeError:
+        return Response({
+            'success': False,
+            'error': 'Datos JSON inválidos'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': f'Error al enviar mensaje: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

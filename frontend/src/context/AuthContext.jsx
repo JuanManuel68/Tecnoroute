@@ -110,7 +110,11 @@ export const AuthProvider = ({ children }) => {
       
       console.log('Datos recibidos para registro:', userData);
       
-      if (userData.name && userData.email && userData.password) {
+      // Verificar si tiene nombres/apellidos separados o name completo
+      const hasValidData = (userData.nombres && userData.apellidos && userData.email && userData.password) ||
+                           (userData.name && userData.email && userData.password);
+      
+      if (hasValidData) {
         // Intentar registro con la API de Django
         try {
           const response = await fetch('http://localhost:8000/api/auth/register/', {
@@ -121,12 +125,12 @@ export const AuthProvider = ({ children }) => {
             body: JSON.stringify({
               username: userData.email, // Usar email como username
               email: userData.email,
-              first_name: userData.name.split(' ')[0] || userData.name,
-              last_name: userData.name.split(' ').slice(1).join(' ') || '',
+              nombres: userData.nombres || userData.name?.split(' ')[0] || '',
+              apellidos: userData.apellidos || userData.name?.split(' ').slice(1).join(' ') || '',
               password: userData.password,
               password_confirm: userData.confirmPassword || userData.password,
-              telefono: userData.phone || '',
-              direccion: userData.address || '',
+              phone: userData.phone || '',
+              address: userData.address || '',
               city: userData.city || '',
               role: userData.role || 'customer',
               cedula: userData.cedula || '',
@@ -134,25 +138,43 @@ export const AuthProvider = ({ children }) => {
             })
           });
 
-          const responseData = await response.json();
+          let responseData;
+          try {
+            responseData = await response.json();
+          } catch (parseError) {
+            console.error('Error parseando respuesta:', parseError);
+            return { 
+              success: false, 
+              error: `Error en el servidor (${response.status}). Por favor verifica que el backend esté funcionando correctamente.` 
+            };
+          }
+          
           console.log('Respuesta del backend:', responseData);
 
           if (response.ok && responseData.success) {
             // Registro exitoso en backend
+            console.log('Registro exitoso, datos del backend:', responseData);
+            
+            const fullName = responseData.user.first_name && responseData.user.last_name
+              ? `${responseData.user.first_name} ${responseData.user.last_name}`.trim()
+              : responseData.user.first_name || responseData.user.last_name || responseData.user.username;
+            
             const newUser = {
               id: responseData.user.id,
-              name: (responseData.user.first_name + ' ' + responseData.user.last_name).trim(),
+              name: fullName,
               email: responseData.user.email,
-              role: responseData.user.role,
-              phone: userData.phone || '',
-              address: userData.address || '',
-              city: userData.city || '',
+              username: responseData.user.username,
+              role: responseData.user.role || 'customer',
+              phone: responseData.user.telefono || userData.phone || '',
+              address: responseData.user.direccion || userData.address || '',
+              city: responseData.user.ciudad || userData.city || '',
               // Incluir información del conductor si existe
               ...(responseData.user.role === 'conductor' && responseData.conductor_info && {
                 conductor_info: responseData.conductor_info
               })
             };
             
+            console.log('Guardando usuario:', newUser);
             setUser(newUser);
             localStorage.setItem('user', JSON.stringify(newUser));
             localStorage.setItem('authToken', responseData.token);
@@ -160,7 +182,8 @@ export const AuthProvider = ({ children }) => {
             return { success: true, message: responseData.message };
           } else {
             // Error en el backend
-            return { success: false, error: responseData.error || 'Error en el registro' };
+            console.error('Error en registro:', responseData);
+            return { success: false, error: responseData.error || responseData.details || 'Error en el registro' };
           }
         } catch (apiError) {
           console.error('Error conectando con el servidor:', apiError);

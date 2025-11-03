@@ -13,6 +13,9 @@ urlpatterns = [
     path('auth/change-password/', views.change_password, name='change-password'),
     path('auth/delete-account/', views.delete_account, name='delete-account'),
     
+    # URL de contacto
+    path('contact/', views.contact_message, name='contact-message'),
+    
     # URLs de API REST
     path('', include(router.urls)),
 ]

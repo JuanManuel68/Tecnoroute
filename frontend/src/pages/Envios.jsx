@@ -37,12 +37,11 @@ import {
   AttachMoney as AttachMoneyIcon,
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
-import { enviosAPI, clientesAPI, rutasAPI, vehiculosAPI, conductoresAPI } from '../services/apiService';
+import { enviosAPI, clientesAPI, vehiculosAPI, conductoresAPI } from '../services/apiService';
 
 const Envios = () => {
   const [envios, setEnvios] = useState([]);
   const [clientes, setClientes] = useState([]);
-  const [rutas, setRutas] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [conductores, setConductores] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,10 +83,9 @@ const Envios = () => {
       setLoading(true);
       setError(null);
       
-      const [enviosRes, clientesRes, rutasRes, vehiculosRes, conductoresRes] = await Promise.all([
+      const [enviosRes, clientesRes, vehiculosRes, conductoresRes] = await Promise.all([
         enviosAPI.getAll().catch(() => ({ data: [] })),
         clientesAPI.getAll().catch(() => ({ data: [] })),
-        rutasAPI.getAll().catch(() => ({ data: [] })),
         vehiculosAPI.getAll().catch(() => ({ data: [] })),
         conductoresAPI.getAll().catch(() => ({ data: [] }))
       ]);
@@ -99,7 +97,6 @@ const Envios = () => {
       
       setEnvios(enviosFiltrados);
       setClientes(clientesRes.data || []);
-      setRutas(rutasRes.data || []);
       setVehiculos(vehiculosRes.data || []);
       setConductores(conductoresRes.data || []);
     } catch (error) {
@@ -137,7 +134,6 @@ const Envios = () => {
     setFormData({
       numero_guia: `ENV-${Date.now()}`,
       cliente: '',
-      ruta: '',
       vehiculo: '',
       conductor: '',
       descripcion_carga: '',
@@ -166,7 +162,6 @@ const Envios = () => {
     setFormData({
       numero_guia: envio.numero_guia,
       cliente: envio.cliente?.id || '',
-      ruta: envio.ruta?.id || '',
       vehiculo: envio.vehiculo?.id || '',
       conductor: envio.conductor?.id || '',
       descripcion_carga: envio.descripcion_carga,
@@ -271,7 +266,6 @@ const Envios = () => {
             <TableRow>
               <TableCell><strong>Número Guía</strong></TableCell>
               <TableCell><strong>Cliente</strong></TableCell>
-              <TableCell><strong>Ruta</strong></TableCell>
               <TableCell><strong>Peso</strong></TableCell>
               <TableCell><strong>Costo</strong></TableCell>
               <TableCell><strong>Estado</strong></TableCell>
@@ -294,14 +288,6 @@ const Envios = () => {
                   <Typography variant="body2">
                     {envio.cliente?.nombre || 'N/A'}
                   </Typography>
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <LocationOnIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                    <Typography variant="body2">
-                      {envio.ruta?.origen} → {envio.ruta?.destino}
-                    </Typography>
-                  </Box>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
@@ -399,22 +385,6 @@ const Envios = () => {
                   {clientes.map((cliente) => (
                     <MenuItem key={cliente.id} value={cliente.id}>
                       {cliente.nombre}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Ruta *</InputLabel>
-                <Select
-                  value={formData.ruta}
-                  label="Ruta *"
-                  onChange={(e) => setFormData({ ...formData, ruta: e.target.value })}
-                >
-                  {rutas.map((ruta) => (
-                    <MenuItem key={ruta.id} value={ruta.id}>
-                      {ruta.nombre}
                     </MenuItem>
                   ))}
                 </Select>

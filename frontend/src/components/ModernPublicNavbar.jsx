@@ -65,7 +65,8 @@ const handleNavigation = (path) => {
   const menuItems = [
     { label: 'Inicio', path: '/', icon: HomeIcon },
     { label: 'Productos', path: '/productos', icon: BuildingStorefrontIcon },
-    { label: 'Manual de Usuario', path: '/manual', icon: BookOpenIcon },
+    // Manual de Usuario solo visible cuando NO hay sesión iniciada
+    ...(!isAuthenticated ? [{ label: 'Manual de Usuario', path: '/manual', icon: BookOpenIcon }] : []),
     { label: 'Contacto', path: '/contact', icon: PhoneIcon },
   ];
 

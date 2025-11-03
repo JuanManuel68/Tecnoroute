@@ -44,6 +44,7 @@ const Clientes = () => {
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('todos');
+  const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -75,6 +76,8 @@ const Clientes = () => {
 
   const handleEdit = (cliente) => {
     setSelectedCliente(cliente);
+    setError(null);
+    setFormErrors({});
     setFormData({
       first_name: cliente.nombre?.split(' ')[0] || '',
       last_name: cliente.nombre?.split(' ').slice(1).join(' ') || '',
@@ -86,9 +89,94 @@ const Clientes = () => {
     setOpenEditDialog(true);
   };
 
+  const handleBlur = (fieldName) => {
+    const error = validateField(fieldName, formData[fieldName]);
+    if (error) {
+      setFormErrors(prev => ({ ...prev, [fieldName]: error }));
+    }
+  };
+
+  const validateField = (name, value) => {
+    if (!value || value.trim() === '') {
+      const labels = {
+        first_name: 'Nombre',
+        last_name: 'Apellido',
+        telefono: 'Teléfono',
+        ciudad: 'Ciudad',
+        direccion: 'Dirección'
+      };
+      return `${labels[name] || name} es requerido`;
+    }
+
+    switch (name) {
+      case 'first_name':
+      case 'last_name':
+        if (value.length < 2) return 'Debe tener al menos 2 caracteres';
+        break;
+      case 'telefono':
+        const phoneDigits = value.replace(/\D/g, '');
+        if (phoneDigits.length < 7) return 'El teléfono debe tener al menos 7 dígitos';
+        break;
+      case 'direccion':
+        if (value.length < 5) return 'La dirección debe tener al menos 5 caracteres';
+        break;
+      default:
+        break;
+    }
+    
+    return '';
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.first_name || formData.first_name.trim() === '') {
+      errors.first_name = 'El nombre es requerido';
+    } else if (formData.first_name.length < 2) {
+      errors.first_name = 'El nombre debe tener al menos 2 caracteres';
+    }
+    
+    if (!formData.last_name || formData.last_name.trim() === '') {
+      errors.last_name = 'El apellido es requerido';
+    } else if (formData.last_name.length < 2) {
+      errors.last_name = 'El apellido debe tener al menos 2 caracteres';
+    }
+    
+    if (!formData.telefono || formData.telefono.trim() === '') {
+      errors.telefono = 'El teléfono es requerido';
+    } else {
+      const phoneDigits = formData.telefono.replace(/\D/g, '');
+      if (phoneDigits.length < 7) {
+        errors.telefono = 'El teléfono debe tener al menos 7 dígitos';
+      }
+    }
+    
+    if (!formData.ciudad || formData.ciudad.trim() === '') {
+      errors.ciudad = 'La ciudad es requerida';
+    }
+    
+    if (!formData.direccion || formData.direccion.trim() === '') {
+      errors.direccion = 'La dirección es requerida';
+    } else if (formData.direccion.length < 5) {
+      errors.direccion = 'La dirección debe tener al menos 5 caracteres';
+    }
+    
+    return errors;
+  };
+
   const handleSaveEdit = async () => {
     try {
       setError(null);
+      setFormErrors({});
+      
+      // Validar formulario
+      const errors = validateForm();
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        setError('Por favor corrige los errores en el formulario');
+        return;
+      }
+      
       // Actualizar usuario usando el endpoint correcto
       await clientesAPI.update(selectedCliente.id, {
         first_name: formData.first_name,
@@ -327,7 +415,16 @@ const Clientes = () => {
                 fullWidth
                 label="Nombre"
                 value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, first_name: e.target.value });
+                  if (formErrors.first_name) {
+                    setFormErrors(prev => ({ ...prev, first_name: '' }));
+                  }
+                }}
+                onBlur={() => handleBlur('first_name')}
+                required
+                error={!!formErrors.first_name}
+                helperText={formErrors.first_name}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -335,7 +432,16 @@ const Clientes = () => {
                 fullWidth
                 label="Apellido"
                 value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, last_name: e.target.value });
+                  if (formErrors.last_name) {
+                    setFormErrors(prev => ({ ...prev, last_name: '' }));
+                  }
+                }}
+                onBlur={() => handleBlur('last_name')}
+                required
+                error={!!formErrors.last_name}
+                helperText={formErrors.last_name}
               />
             </Grid>
             <Grid item xs={12}>
@@ -353,7 +459,16 @@ const Clientes = () => {
                 fullWidth
                 label="Teléfono"
                 value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, telefono: e.target.value });
+                  if (formErrors.telefono) {
+                    setFormErrors(prev => ({ ...prev, telefono: '' }));
+                  }
+                }}
+                onBlur={() => handleBlur('telefono')}
+                required
+                error={!!formErrors.telefono}
+                helperText={formErrors.telefono}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -361,7 +476,16 @@ const Clientes = () => {
                 fullWidth
                 label="Ciudad"
                 value={formData.ciudad}
-                onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, ciudad: e.target.value });
+                  if (formErrors.ciudad) {
+                    setFormErrors(prev => ({ ...prev, ciudad: '' }));
+                  }
+                }}
+                onBlur={() => handleBlur('ciudad')}
+                required
+                error={!!formErrors.ciudad}
+                helperText={formErrors.ciudad}
               />
             </Grid>
             <Grid item xs={12}>
@@ -369,7 +493,16 @@ const Clientes = () => {
                 fullWidth
                 label="Dirección"
                 value={formData.direccion}
-                onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, direccion: e.target.value });
+                  if (formErrors.direccion) {
+                    setFormErrors(prev => ({ ...prev, direccion: '' }));
+                  }
+                }}
+                onBlur={() => handleBlur('direccion')}
+                required
+                error={!!formErrors.direccion}
+                helperText={formErrors.direccion}
               />
             </Grid>
           </Grid>

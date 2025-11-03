@@ -7,10 +7,10 @@ from django.db.models import Q
 from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 
-from .models import Conductor, Vehiculo, Ruta, Envio, SeguimientoEnvio
+from .models import Conductor, Vehiculo, Envio, SeguimientoEnvio
 from .serializers import (
     ClienteSerializer, ConductorSerializer, VehiculoSerializer, 
-    RutaSerializer, EnvioSerializer, EnvioCreateSerializer, 
+    EnvioSerializer, EnvioCreateSerializer, 
     EnvioListSerializer, SeguimientoEnvioSerializer
 )
 
@@ -85,7 +85,7 @@ class ConductorViewSet(viewsets.ModelViewSet):
     serializer_class = ConductorSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['estado', 'activo']
-    search_fields = ['nombre', 'cedula', 'licencia']
+    search_fields = ['nombres', 'apellidos', 'cedula', 'licencia']
     ordering_fields = ['nombre', 'fecha_contratacion']
     ordering = ['nombre']
     
@@ -102,9 +102,8 @@ class ConductorViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 # Create Django user
-                full_name_parts = data.get('nombre', '').strip().split(' ', 1)
-                first_name = full_name_parts[0] if full_name_parts else ''
-                last_name = full_name_parts[1] if len(full_name_parts) > 1 else ''
+                nombres = data.get('nombres', '').strip()
+                apellidos = data.get('apellidos', '').strip()
                 
                 # Use email as username for conductors
                 username = data.get('email', '').split('@')[0]
@@ -122,8 +121,8 @@ class ConductorViewSet(viewsets.ModelViewSet):
                 user = User.objects.create_user(
                     username=username,
                     email=data.get('email'),
-                    first_name=first_name,
-                    last_name=last_name,
+                    first_name=nombres,
+                    last_name=apellidos,
                     password=password
                 )
                 
@@ -137,7 +136,8 @@ class ConductorViewSet(viewsets.ModelViewSet):
                 
                 # Create conductor record
                 conductor_data = {
-                    'nombre': data.get('nombre'),
+                    'nombres': data.get('nombres'),
+                    'apellidos': data.get('apellidos'),
                     'cedula': data.get('cedula'),
                     'licencia': data.get('licencia'),
                     'telefono': data.get('telefono'),
@@ -386,7 +386,7 @@ class VehiculoViewSet(viewsets.ModelViewSet):
                 ).exclude(id=instance.id).first()
                 if existing_vehicle:
                     return Response({
-                        'error': f'El conductor {conductor.nombre} ya está asignado al vehículo {existing_vehicle.placa}'
+                        'error': f'El conductor {conductor.nombre_completo} ya está asignado al vehículo {existing_vehicle.placa}'
                     }, status=status.HTTP_400_BAD_REQUEST)
             except Conductor.DoesNotExist:
                 return Response({'error': 'Conductor no encontrado'}, status=status.HTTP_404_NOT_FOUND)
@@ -422,27 +422,10 @@ class VehiculoViewSet(viewsets.ModelViewSet):
             )
 
 
-class RutaViewSet(viewsets.ModelViewSet):
-    """API endpoint para gestionar rutas"""
-    queryset = Ruta.objects.all()
-    serializer_class = RutaSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['estado', 'activa']
-    search_fields = ['nombre', 'origen', 'destino']
-    ordering_fields = ['nombre', 'distancia_km', 'fecha_creacion']
-    ordering = ['-fecha_creacion']
-
-    @action(detail=False, methods=['get'])
-    def activas(self, request):
-        """Obtener rutas activas"""
-        rutas_activas = Ruta.objects.filter(activa=True)
-        serializer = self.get_serializer(rutas_activas, many=True)
-        return Response(serializer.data)
-
 
 class EnvioViewSet(viewsets.ModelViewSet):
     """API endpoint para gestionar envíos"""
-    queryset = Envio.objects.select_related('cliente', 'ruta', 'vehiculo', 'conductor').all()
+    queryset = Envio.objects.select_related('cliente', 'vehiculo', 'conductor').all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['estado', 'prioridad', 'cliente', 'conductor', 'vehiculo']
     search_fields = ['numero_guia', 'cliente__nombre', 'descripcion_carga']

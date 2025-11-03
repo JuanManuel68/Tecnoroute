@@ -36,7 +36,8 @@ class Conductor(models.Model):
         ('inactivo', 'Inactivo'),
     ]
     
-    nombre = models.CharField(max_length=200, verbose_name="Nombre")
+    nombres = models.CharField(max_length=100, blank=True, default='', verbose_name="Nombres")
+    apellidos = models.CharField(max_length=100, blank=True, default='', verbose_name="Apellidos")
     cedula = models.CharField(max_length=20, unique=True, verbose_name="Cédula")
     licencia = models.CharField(max_length=50, verbose_name="Licencia de Conducir")
     telefono = models.CharField(max_length=20, verbose_name="Teléfono")
@@ -61,10 +62,14 @@ class Conductor(models.Model):
     class Meta:
         verbose_name = "Conductor"
         verbose_name_plural = "Conductores"
-        ordering = ['nombre']
+        ordering = ['apellidos', 'nombres']
 
     def __str__(self):
-        return f"{self.nombre} - {self.cedula}"
+        return f"{self.nombres} {self.apellidos} - {self.cedula}"
+    
+    @property
+    def nombre_completo(self):
+        return f"{self.nombres} {self.apellidos}"
 
 
 class Vehiculo(models.Model):
@@ -114,37 +119,6 @@ class Vehiculo(models.Model):
         return f"{self.placa} - {self.marca} {self.modelo}"
 
 
-class Ruta(models.Model):
-    ESTADO_CHOICES = [
-        ('planificada', 'Planificada'),
-        ('en_progreso', 'En Progreso'),
-        ('completada', 'Completada'),
-        ('cancelada', 'Cancelada'),
-    ]
-    
-    nombre = models.CharField(max_length=200, verbose_name="Nombre de la Ruta")
-    origen = models.CharField(max_length=200, verbose_name="Origen")
-    destino = models.CharField(max_length=200, verbose_name="Destino")
-    distancia_km = models.DecimalField(max_digits=8, decimal_places=2, verbose_name="Distancia (km)")
-    tiempo_estimado_horas = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Tiempo Estimado (horas)")
-    costo_combustible = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Costo de Combustible")
-    peajes = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Costo de Peajes")
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='planificada', verbose_name="Estado")
-    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
-    activa = models.BooleanField(default=True, verbose_name="Activa")
-
-    class Meta:
-        verbose_name = "Ruta"
-        verbose_name_plural = "Rutas"
-        ordering = ['-fecha_creacion']
-
-    def __str__(self):
-        return f"{self.nombre} ({self.origen} → {self.destino})"
-
-    @property
-    def costo_total(self):
-        return self.costo_combustible + self.peajes
-
 
 class Envio(models.Model):
     ESTADO_CHOICES = [
@@ -164,7 +138,10 @@ class Envio(models.Model):
     
     numero_guia = models.CharField(max_length=50, unique=True, verbose_name="Número de Guía")
     cliente = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Cliente")
-    ruta = models.ForeignKey(Ruta, on_delete=models.CASCADE, verbose_name="Ruta")
+    # Datos de ruta integrados directamente
+    origen = models.CharField(max_length=200, blank=True, default='', verbose_name="Origen")
+    destino = models.CharField(max_length=200, blank=True, default='', verbose_name="Destino")
+    distancia_km = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, verbose_name="Distancia (km)")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Vehículo")
     conductor = models.ForeignKey(Conductor, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Conductor")
     

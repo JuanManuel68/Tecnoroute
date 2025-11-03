@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Conductor, Vehiculo, Ruta, Envio, SeguimientoEnvio, Admin
+from .models import Conductor, Vehiculo, Envio, SeguimientoEnvio, Admin
 from user_management.models import UserProfile, Categoria, Producto, Carrito, CarritoItem, Pedido, PedidoItem
 
 
@@ -67,20 +67,12 @@ class VehiculoSerializer(serializers.ModelSerializer):
         if obj.conductor_asignado:
             return {
                 'id': obj.conductor_asignado.id,
-                'nombre': obj.conductor_asignado.nombre,
+                'nombre': obj.conductor_asignado.nombre_completo,
                 'cedula': obj.conductor_asignado.cedula,
                 'telefono': obj.conductor_asignado.telefono
             }
         return None
 
-
-class RutaSerializer(serializers.ModelSerializer):
-    costo_total = serializers.ReadOnlyField()
-    
-    class Meta:
-        model = Ruta
-        fields = '__all__'
-        read_only_fields = ('fecha_creacion',)
 
 
 class SeguimientoEnvioSerializer(serializers.ModelSerializer):
@@ -93,9 +85,8 @@ class SeguimientoEnvioSerializer(serializers.ModelSerializer):
 class EnvioSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.SerializerMethodField()
     cliente_email = serializers.EmailField(source='cliente.email', read_only=True)
-    ruta_nombre = serializers.CharField(source='ruta.nombre', read_only=True)
     vehiculo_placa = serializers.CharField(source='vehiculo.placa', read_only=True)
-    conductor_nombre = serializers.CharField(source='conductor.nombre', read_only=True)
+    conductor_nombre = serializers.CharField(source='conductor.nombre_completo', read_only=True)
     seguimientos = SeguimientoEnvioSerializer(many=True, read_only=True)
     dias_transito = serializers.ReadOnlyField()
     
@@ -139,7 +130,7 @@ class EnvioListSerializer(serializers.ModelSerializer):
         ]
     
     def get_ruta_info(self, obj):
-        return f"{obj.ruta.origen} → {obj.ruta.destino}"
+        return f"{obj.origen} → {obj.destino}"
 
 
 # Nuevos serializers para autenticación y productos
@@ -159,9 +150,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
     password_confirm = serializers.CharField(write_only=True)
     telefono = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True, write_only=True)
     direccion = serializers.CharField(required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True, write_only=True)
     city = serializers.CharField(required=False, allow_blank=True)
     role = serializers.ChoiceField(choices=['customer', 'conductor', 'admin'], default='customer')
+    
+    # Campos para nombres/apellidos (alternativa a first_name/last_name)
+    nombres = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    apellidos = serializers.CharField(required=False, allow_blank=True, write_only=True)
     
     # Campos adicionales para conductor
     cedula = serializers.CharField(required=False, allow_blank=True)
@@ -170,9 +167,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'username', 'email', 'first_name', 'last_name', 'password', 
-            'password_confirm', 'telefono', 'direccion', 'city', 'role',
-            'cedula', 'licencia'
+            'username', 'email', 'first_name', 'last_name', 'nombres', 'apellidos',
+            'password', 'password_confirm', 'telefono', 'phone', 'direccion', 'address',
+            'city', 'role', 'cedula', 'licencia'
         ]
     
     def validate(self, data):
@@ -192,19 +189,25 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         from datetime import date
         
         validated_data.pop('password_confirm')
-        telefono = validated_data.pop('telefono', '')
-        direccion = validated_data.pop('direccion', '')
+        
+        # Manejar ambos formatos: telefono/phone y direccion/address
+        telefono = validated_data.pop('telefono', '') or validated_data.pop('phone', '')
+        direccion = validated_data.pop('direccion', '') or validated_data.pop('address', '')
         city = validated_data.pop('city', '')
         role = validated_data.pop('role', 'customer')
         cedula = validated_data.pop('cedula', '')
         licencia = validated_data.pop('licencia', '')
         
+        # Manejar nombres/apellidos o first_name/last_name
+        nombres = validated_data.pop('nombres', '') or validated_data.get('first_name', '')
+        apellidos = validated_data.pop('apellidos', '') or validated_data.get('last_name', '')
+        
         # Crear el usuario base
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
+            first_name=nombres,
+            last_name=apellidos,
             password=validated_data['password']
         )
         
@@ -212,6 +215,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user_profile = UserProfile.objects.create(
             user=user,
             role=role,
+            nombres=nombres,
+            apellidos=apellidos,
             telefono=telefono,
             direccion=direccion,
             ciudad=city
@@ -224,7 +229,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             
         if role == 'conductor':
             Conductor.objects.create(
-                nombre=full_name,
+                nombres=nombres,
+                apellidos=apellidos,
                 cedula=cedula,
                 licencia=licencia,
                 telefono=telefono,
@@ -300,7 +306,7 @@ class PedidoSerializer(serializers.ModelSerializer):
         if obj.conductor:
             return {
                 'id': obj.conductor.id,
-                'nombre': obj.conductor.nombre,
+                'nombre': obj.conductor.nombre_completo,
                 'cedula': obj.conductor.cedula,
                 'telefono': obj.conductor.telefono
             }

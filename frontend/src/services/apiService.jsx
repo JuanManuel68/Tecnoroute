@@ -62,9 +62,6 @@ const API_ENDPOINTS = {
   vehiculos: '/api/vehiculos/',
   vehiculosDisponibles: '/api/vehiculos/disponibles/',
   
-  // Rutas
-  rutas: '/api/rutas/',
-  rutasActivas: '/api/rutas/activas/',
   
   // Envíos
   envios: '/api/envios/',
@@ -88,6 +85,9 @@ const API_ENDPOINTS = {
   // Autenticación
   login: '/api/auth/login/',
   register: '/api/auth/register/',
+  
+  // Contacto
+  contact: '/api/contact/',
   
   // Dashboard
   dashboardStats: '/api/dashboard/stats/',
@@ -121,15 +121,6 @@ export const vehiculosAPI = {
   delete: (id) => apiService.delete(`${API_ENDPOINTS.vehiculos}${id}/`),
   getDisponibles: () => apiService.get(API_ENDPOINTS.vehiculosDisponibles),
   cambiarEstado: (id, estado) => apiService.post(`${API_ENDPOINTS.vehiculos}${id}/cambiar_estado/`, { estado }),
-};
-
-export const rutasAPI = {
-  getAll: () => apiService.get(API_ENDPOINTS.rutas),
-  getById: (id) => apiService.get(`${API_ENDPOINTS.rutas}${id}/`),
-  create: (data) => apiService.post(API_ENDPOINTS.rutas, data),
-  update: (id, data) => apiService.put(`${API_ENDPOINTS.rutas}${id}/`, data),
-  delete: (id) => apiService.delete(`${API_ENDPOINTS.rutas}${id}/`),
-  getActivas: () => apiService.get(API_ENDPOINTS.rutasActivas),
 };
 
 export const enviosAPI = {
@@ -217,6 +208,11 @@ export const carritoAPI = {
 export const authAPI = {
   login: (email, password) => apiService.post(API_ENDPOINTS.login, { email, password }),
   register: (userData) => apiService.post(API_ENDPOINTS.register, userData),
+};
+
+// API de contacto
+export const contactAPI = {
+  sendMessage: (messageData) => apiService.post(API_ENDPOINTS.contact, messageData),
 };
 
 // API del dashboard

@@ -7,40 +7,134 @@ import {
   PaperAirplaneIcon,
   TruckIcon,
   HeartIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
+import { contactAPI } from '../services/apiService';
 
 const ModernContact = () => {
   const [formData, setFormData] = useState({
-    nombre: '',
+    nombres: '',
+    apellidos: '',
     email: '',
     asunto: '',
     mensaje: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (error) setError('');
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    if (error) {
+      setFieldErrors(prev => ({ ...prev, [name]: error }));
+    }
+  };
+
+  const validateField = (name, value) => {
+    if (!value || value.trim() === '') {
+      const labels = {
+        nombres: 'Nombres',
+        apellidos: 'Apellidos',
+        email: 'Correo electrónico',
+        asunto: 'Asunto',
+        mensaje: 'Mensaje'
+      };
+      return `${labels[name] || name} es requerido`;
+    }
+
+    switch (name) {
+      case 'nombres':
+        if (value.length < 2) return 'Los nombres deben tener al menos 2 caracteres';
+        break;
+      case 'apellidos':
+        if (value.length < 2) return 'Los apellidos deben tener al menos 2 caracteres';
+        break;
+      case 'email':
+        // Validar que tenga @
+        if (!value.includes('@')) {
+          return 'El correo debe contener el símbolo @';
+        } else {
+          // Validar formato completo
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            return 'Formato de correo inválido (ejemplo: usuario@dominio.com)';
+          }
+        }
+        break;
+      case 'asunto':
+        if (value.length < 3) return 'El asunto debe tener al menos 3 caracteres';
+        break;
+      case 'mensaje':
+        if (value.length < 10) return 'El mensaje debe tener al menos 10 caracteres';
+        break;
+      default:
+        break;
+    }
+    
+    return '';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
+    setError('');
+    setFieldErrors({});
+
+    // Validar todos los campos
+    const errors = {};
+    const fieldsToValidate = ['nombres', 'apellidos', 'email', 'asunto', 'mensaje'];
+    
+    fieldsToValidate.forEach(field => {
+      const error = validateField(field, formData[field]);
+      if (error) errors[field] = error;
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Por favor corrige los errores en el formulario');
       setIsSubmitting(false);
-      setIsSubmitted(true);
-      setTimeout(() => {
-        setIsSubmitted(false);
-        setFormData({
-          nombre: '',
-          email: '',
-          asunto: '',
-          mensaje: ''
-        });
-      }, 3000);
-    }, 1500);
+      return;
+    }
+    
+    try {
+      const response = await contactAPI.sendMessage(formData);
+      
+      if (response.data.success) {
+        setIsSubmitted(true);
+        setTimeout(() => {
+          setIsSubmitted(false);
+          setFormData({
+            nombres: '',
+            apellidos: '',
+            email: '',
+            asunto: '',
+            mensaje: ''
+          });
+        }, 3000);
+      } else {
+        setError(response.data.error || 'Error al enviar el mensaje');
+      }
+    } catch (err) {
+      console.error('Error al enviar mensaje:', err);
+      setError(
+        err.response?.data?.error || 
+        'Error al enviar el mensaje. Por favor, inténtalo de nuevo.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const contactInfo = [
@@ -105,6 +199,14 @@ const ModernContact = () => {
         <div className="bg-white shadow-lg rounded-xl p-8 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Envíanos un mensaje</h2>
 
+          {/* Mensaje de error */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+              <ExclamationCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
           {isSubmitted ? (
             <div className="text-center py-8">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -116,19 +218,47 @@ const ModernContact = () => {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre completo <span className="text-red-500">*</span>
+                <label htmlFor="nombres" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombres <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  id="nombre"
-                  name="nombre"
+                  id="nombres"
+                  name="nombres"
                   required
-                  value={formData.nombre}
+                  value={formData.nombres}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
-                  placeholder="Tu nombre completo"
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
+                    fieldErrors.nombres ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Juan Carlos"
                 />
+                {fieldErrors.nombres && (
+                  <p className="mt-1 text-sm text-red-600">{fieldErrors.nombres}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="apellidos" className="block text-sm font-medium text-gray-700 mb-2">
+                  Apellidos <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="apellidos"
+                  name="apellidos"
+                  required
+                  value={formData.apellidos}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
+                    fieldErrors.apellidos ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Pérez González"
+                />
+                {fieldErrors.apellidos && (
+                  <p className="mt-1 text-sm text-red-600">{fieldErrors.apellidos}</p>
+                )}
               </div>
 
               <div>
@@ -142,9 +272,15 @@ const ModernContact = () => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
+                    fieldErrors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="tu@email.com"
                 />
+                {fieldErrors.email && (
+                  <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+                )}
               </div>
 
               <div>
@@ -158,9 +294,15 @@ const ModernContact = () => {
                   required
                   value={formData.asunto}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
+                    fieldErrors.asunto ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="¿En qué te podemos ayudar?"
                 />
+                {fieldErrors.asunto && (
+                  <p className="mt-1 text-sm text-red-600">{fieldErrors.asunto}</p>
+                )}
               </div>
 
               <div>
@@ -174,9 +316,15 @@ const ModernContact = () => {
                   rows={5}
                   value={formData.mensaje}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition resize-none"
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition resize-none ${
+                    fieldErrors.mensaje ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Cuéntanos más detalles sobre tu consulta..."
                 ></textarea>
+                {fieldErrors.mensaje && (
+                  <p className="mt-1 text-sm text-red-600">{fieldErrors.mensaje}</p>
+                )}
               </div>
 
               <button

@@ -56,7 +56,8 @@ const Conductores = () => {
   const [estadoFilter, setEstadoFilter] = useState('todos');
   const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState({
-    nombre: '',
+    nombres: '',
+    apellidos: '',
     cedula: '',
     licencia: '',
     telefono: '',
@@ -111,7 +112,8 @@ const Conductores = () => {
     setError(null);
     setFormErrors({});
     setFormData({
-      nombre: '',
+      nombres: '',
+      apellidos: '',
       cedula: '',
       licencia: '',
       telefono: '',
@@ -128,7 +130,8 @@ const Conductores = () => {
     setError(null);
     setFormErrors({});
     setFormData({
-      nombre: conductor.nombre,
+      nombres: conductor.nombres || '',
+      apellidos: conductor.apellidos || '',
       cedula: conductor.cedula,
       licencia: conductor.licencia,
       telefono: conductor.telefono,
@@ -145,10 +148,127 @@ const Conductores = () => {
     setOpenDialog(true);
   };
 
+  const handleBlur = (fieldName) => {
+    const error = validateField(fieldName, formData[fieldName]);
+    if (error) {
+      setFormErrors(prev => ({ ...prev, [fieldName]: error }));
+    }
+  };
+
+  const validateField = (name, value) => {
+    if (!value || value.trim() === '') {
+      const labels = {
+        nombres: 'Nombres',
+        apellidos: 'Apellidos',
+        cedula: 'Cédula',
+        licencia: 'Licencia',
+        telefono: 'Teléfono',
+        email: 'Email',
+        direccion: 'Dirección'
+      };
+      return `${labels[name] || name} es requerido`;
+    }
+
+    switch (name) {
+      case 'nombres':
+        if (value.length < 2) return 'Los nombres deben tener al menos 2 caracteres';
+        break;
+      case 'apellidos':
+        if (value.length < 2) return 'Los apellidos deben tener al menos 2 caracteres';
+        break;
+      case 'cedula':
+        if (value.length < 6) return 'La cédula debe tener al menos 6 caracteres';
+        break;
+      case 'telefono':
+        const phoneDigits = value.replace(/\D/g, '');
+        if (phoneDigits.length < 7) return 'El teléfono debe tener al menos 7 dígitos';
+        break;
+      case 'email':
+        // Validar que tenga @
+        if (!value.includes('@')) {
+          return 'El correo debe contener el símbolo @';
+        } else {
+          // Validar formato completo
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            return 'Formato de correo inválido (ejemplo: usuario@dominio.com)';
+          }
+        }
+        break;
+      case 'direccion':
+        if (value.length < 5) return 'La dirección debe tener al menos 5 caracteres';
+        break;
+      default:
+        break;
+    }
+    
+    return '';
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.nombres || formData.nombres.trim() === '') {
+      errors.nombres = 'Los nombres son requeridos';
+    } else if (formData.nombres.length < 2) {
+      errors.nombres = 'Los nombres deben tener al menos 2 caracteres';
+    }
+    
+    if (!formData.apellidos || formData.apellidos.trim() === '') {
+      errors.apellidos = 'Los apellidos son requeridos';
+    } else if (formData.apellidos.length < 2) {
+      errors.apellidos = 'Los apellidos deben tener al menos 2 caracteres';
+    }
+    
+    if (!formData.cedula || formData.cedula.trim() === '') {
+      errors.cedula = 'La cédula es requerida';
+    } else if (formData.cedula.length < 6) {
+      errors.cedula = 'La cédula debe tener al menos 6 caracteres';
+    }
+    
+    if (!formData.licencia || formData.licencia.trim() === '') {
+      errors.licencia = 'La licencia es requerida';
+    }
+    
+    if (!formData.telefono || formData.telefono.trim() === '') {
+      errors.telefono = 'El teléfono es requerido';
+    } else {
+      const phoneDigits = formData.telefono.replace(/\D/g, '');
+      if (phoneDigits.length < 7) {
+        errors.telefono = 'El teléfono debe tener al menos 7 dígitos';
+      }
+    }
+    
+    if (!formData.email || formData.email.trim() === '') {
+      errors.email = 'El email es requerido';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        errors.email = 'Formato de correo inválido';
+      }
+    }
+    
+    if (!formData.direccion || formData.direccion.trim() === '') {
+      errors.direccion = 'La dirección es requerida';
+    } else if (formData.direccion.length < 5) {
+      errors.direccion = 'La dirección debe tener al menos 5 caracteres';
+    }
+    
+    return errors;
+  };
+
   const handleSave = async () => {
     try {
       setError(null);
       setFormErrors({});
+      
+      // Validar formulario
+      const errors = validateForm();
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        setError('Por favor corrige los errores en el formulario');
+        return;
+      }
       
       // For new conductors
       if (!isEditing) {
@@ -199,7 +319,8 @@ const Conductores = () => {
               const fieldNames = {
                 'cedula': 'Cédula',
                 'email': 'Email',
-                'nombre': 'Nombre',
+                'nombres': 'Nombres',
+                'apellidos': 'Apellidos',
                 'telefono': 'Teléfono',
                 'licencia': 'Licencia',
                 'direccion': 'Dirección'
@@ -212,8 +333,15 @@ const Conductores = () => {
           setFormErrors(newErrors);
           setError(errorMessage.trim());
         } else {
-          // Error genérico
-          setError(errorData.error || errorData.message || 'Error al guardar el conductor');
+          // Error genérico - manejar email duplicado
+          const errorMsg = errorData.error || errorData.message || 'Error al guardar el conductor';
+          
+          // Si el error es de email duplicado
+          if (errorMsg.toLowerCase().includes('email') || errorMsg.toLowerCase().includes('correo')) {
+            setFormErrors({ email: errorMsg });
+          }
+          
+          setError(errorMsg);
         }
       } else {
         setError('Error de conexión. Por favor verifica tu conexión a internet.');
@@ -612,12 +740,37 @@ const Conductores = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Nombre completo"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  label="Nombres"
+                  value={formData.nombres}
+                  onChange={(e) => {
+                    setFormData({ ...formData, nombres: e.target.value });
+                    if (formErrors.nombres) {
+                      setFormErrors(prev => ({ ...prev, nombres: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('nombres')}
                   required
-                  error={!!formErrors.nombre}
-                  helperText={formErrors.nombre}
+                  error={!!formErrors.nombres}
+                  helperText={formErrors.nombres}
+                  placeholder="Juan Carlos"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Apellidos"
+                  value={formData.apellidos}
+                  onChange={(e) => {
+                    setFormData({ ...formData, apellidos: e.target.value });
+                    if (formErrors.apellidos) {
+                      setFormErrors(prev => ({ ...prev, apellidos: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('apellidos')}
+                  required
+                  error={!!formErrors.apellidos}
+                  helperText={formErrors.apellidos}
+                  placeholder="Pérez González"
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -625,7 +778,13 @@ const Conductores = () => {
                   fullWidth
                   label="Cédula"
                   value={formData.cedula}
-                  onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, cedula: e.target.value });
+                    if (formErrors.cedula) {
+                      setFormErrors(prev => ({ ...prev, cedula: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('cedula')}
                   required
                   error={!!formErrors.cedula}
                   helperText={formErrors.cedula}
@@ -636,7 +795,13 @@ const Conductores = () => {
                   fullWidth
                   label="Licencia de conducir"
                   value={formData.licencia}
-                  onChange={(e) => setFormData({ ...formData, licencia: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, licencia: e.target.value });
+                    if (formErrors.licencia) {
+                      setFormErrors(prev => ({ ...prev, licencia: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('licencia')}
                   placeholder="Ej: B1, C1, A2"
                   required
                   error={!!formErrors.licencia}
@@ -648,7 +813,13 @@ const Conductores = () => {
                   fullWidth
                   label="Teléfono"
                   value={formData.telefono}
-                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, telefono: e.target.value });
+                    if (formErrors.telefono) {
+                      setFormErrors(prev => ({ ...prev, telefono: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('telefono')}
                   required
                   error={!!formErrors.telefono}
                   helperText={formErrors.telefono}
@@ -660,7 +831,13 @@ const Conductores = () => {
                   label="Email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (formErrors.email) {
+                      setFormErrors(prev => ({ ...prev, email: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('email')}
                   required
                   error={!!formErrors.email}
                   helperText={formErrors.email}
@@ -673,7 +850,13 @@ const Conductores = () => {
                   multiline
                   rows={2}
                   value={formData.direccion}
-                  onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, direccion: e.target.value });
+                    if (formErrors.direccion) {
+                      setFormErrors(prev => ({ ...prev, direccion: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('direccion')}
                   required
                   error={!!formErrors.direccion}
                   helperText={formErrors.direccion}

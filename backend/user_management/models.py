@@ -11,6 +11,9 @@ class UserProfile(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=10, choices=ROLES, default='customer')
+    # Nombres y apellidos
+    nombres = models.CharField(max_length=100, blank=True, verbose_name="Nombres")
+    apellidos = models.CharField(max_length=100, blank=True, verbose_name="Apellidos")
     telefono = models.CharField(max_length=20, blank=True, verbose_name="Teléfono")
     direccion = models.TextField(blank=True, verbose_name="Dirección")
     ciudad = models.CharField(max_length=100, blank=True, verbose_name="Ciudad")
@@ -110,3 +113,32 @@ class PedidoItem(models.Model):
 
     def __str__(self):
         return f"{self.cantidad}x {self.producto.nombre} - Pedido {self.pedido.numero_pedido}"
+
+class Contacto(models.Model):
+    """Modelo para guardar mensajes de contacto de los usuarios"""
+    usuario = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name="Usuario",
+        help_text="Usuario que envió el mensaje (si está autenticado)"
+    )
+    # Campos de nombre
+    nombres = models.CharField(max_length=100, verbose_name="Nombres")
+    apellidos = models.CharField(max_length=100, verbose_name="Apellidos")
+    email = models.EmailField(verbose_name="Correo Electrónico")
+    asunto = models.CharField(max_length=200, verbose_name="Asunto")
+    mensaje = models.TextField(verbose_name="Mensaje")
+    fecha_envio = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Envío")
+    leido = models.BooleanField(default=False, verbose_name="Leído")
+    respondido = models.BooleanField(default=False, verbose_name="Respondido")
+    
+    class Meta:
+        verbose_name = "Mensaje de Contacto"
+        verbose_name_plural = "Mensajes de Contacto"
+        ordering = ['-fecha_envio']
+    
+    def __str__(self):
+        nombre_completo = f"{self.nombres} {self.apellidos}"
+        return f"{nombre_completo} - {self.asunto} ({self.fecha_envio.strftime('%Y-%m-%d %H:%M')})"

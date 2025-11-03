@@ -22,7 +22,6 @@ import ModernDashboard from './pages/ModernDashboard';
 import Clientes from './pages/Clientes';
 import Conductores from './pages/Conductores';
 import Vehiculos from './pages/Vehiculos';
-import Rutas from './pages/Rutas';
 import Envios from './pages/Envios';
 import SeguimientoEnvio from './pages/SeguimientoEnvio';
 import ConductorDashboard from './pages/ConductorDashboard';
@@ -147,7 +146,6 @@ const AppContent = () => {
           <Route path="/admin/clientes" element={<AdminRoute><Clientes /></AdminRoute>} />
           <Route path="/admin/conductores" element={<AdminRoute><Conductores /></AdminRoute>} />
           <Route path="/admin/vehiculos" element={<AdminRoute><Vehiculos /></AdminRoute>} />
-          <Route path="/admin/rutas" element={<AdminRoute><Rutas /></AdminRoute>} />
           <Route path="/admin/envios" element={<AdminRoute><Envios /></AdminRoute>} />
           <Route path="/admin/seguimiento" element={<AdminRoute><SeguimientoEnvio /></AdminRoute>} />
           <Route path="/admin/pedidos" element={<AdminRoute><PedidosAdmin /></AdminRoute>} />

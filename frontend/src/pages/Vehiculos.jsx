@@ -54,6 +54,7 @@ const Vehiculos = () => {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, vehiculo: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('todos');
+  const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState({
     placa: '',
     marca: '',
@@ -165,6 +166,8 @@ const Vehiculos = () => {
   const handleCreate = () => {
     setSelectedVehiculo(null);
     setIsEditing(false);
+    setError(null);
+    setFormErrors({});
     setFormData({
       placa: '',
       marca: '',
@@ -185,6 +188,8 @@ const Vehiculos = () => {
   const handleEdit = (vehiculo) => {
     setSelectedVehiculo(vehiculo);
     setIsEditing(true);
+    setError(null);
+    setFormErrors({});
     setFormData({
       placa: vehiculo.placa,
       marca: vehiculo.marca,
@@ -208,8 +213,110 @@ const Vehiculos = () => {
     setOpenDialog(true);
   };
 
+  const handleBlur = (fieldName) => {
+    const error = validateField(fieldName, formData[fieldName]);
+    if (error) {
+      setFormErrors(prev => ({ ...prev, [fieldName]: error }));
+    }
+  };
+
+  const validateField = (name, value) => {
+    if (!value || value === '') {
+      const labels = {
+        placa: 'Placa',
+        marca: 'Marca',
+        modelo: 'Modelo',
+        año: 'Año',
+        capacidad_kg: 'Capacidad de carga',
+        color: 'Color',
+        numero_motor: 'Número de motor',
+        numero_chasis: 'Número de chasis'
+      };
+      return `${labels[name] || name} es requerido`;
+    }
+
+    switch (name) {
+      case 'placa':
+        if (value.length < 6) return 'La placa debe tener al menos 6 caracteres';
+        break;
+      case 'año':
+        const year = parseInt(value);
+        const currentYear = new Date().getFullYear();
+        if (year < 1990 || year > currentYear + 1) {
+          return `El año debe estar entre 1990 y ${currentYear + 1}`;
+        }
+        break;
+      case 'capacidad_kg':
+        if (parseFloat(value) <= 0) return 'La capacidad debe ser mayor a 0';
+        break;
+      default:
+        break;
+    }
+    
+    return '';
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.placa || formData.placa.trim() === '') {
+      errors.placa = 'La placa es requerida';
+    } else if (formData.placa.length < 6) {
+      errors.placa = 'La placa debe tener al menos 6 caracteres';
+    }
+    
+    if (!formData.marca || formData.marca.trim() === '') {
+      errors.marca = 'La marca es requerida';
+    }
+    
+    if (!formData.modelo || formData.modelo.trim() === '') {
+      errors.modelo = 'El modelo es requerido';
+    }
+    
+    if (!formData.año || formData.año === '') {
+      errors.año = 'El año es requerido';
+    } else {
+      const year = parseInt(formData.año);
+      const currentYear = new Date().getFullYear();
+      if (year < 1990 || year > currentYear + 1) {
+        errors.año = `El año debe estar entre 1990 y ${currentYear + 1}`;
+      }
+    }
+    
+    if (!formData.capacidad_kg || formData.capacidad_kg === '') {
+      errors.capacidad_kg = 'La capacidad de carga es requerida';
+    } else if (parseFloat(formData.capacidad_kg) <= 0) {
+      errors.capacidad_kg = 'La capacidad debe ser mayor a 0';
+    }
+    
+    if (!formData.color || formData.color.trim() === '') {
+      errors.color = 'El color es requerido';
+    }
+    
+    if (!formData.numero_motor || formData.numero_motor.trim() === '') {
+      errors.numero_motor = 'El número de motor es requerido';
+    }
+    
+    if (!formData.numero_chasis || formData.numero_chasis.trim() === '') {
+      errors.numero_chasis = 'El número de chasis es requerido';
+    }
+    
+    return errors;
+  };
+
   const handleSave = async () => {
     try {
+      setError(null);
+      setFormErrors({});
+      
+      // Validar formulario
+      const errors = validateForm();
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        setError('Por favor corrige los errores en el formulario');
+        return;
+      }
+      
       if (isEditing && selectedVehiculo) {
         await vehiculosAPI.update(selectedVehiculo.id, formData);
       } else {
@@ -624,9 +731,17 @@ const Vehiculos = () => {
                   fullWidth
                   label="Placa"
                   value={formData.placa}
-                  onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase() })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, placa: e.target.value.toUpperCase() });
+                    if (formErrors.placa) {
+                      setFormErrors(prev => ({ ...prev, placa: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('placa')}
                   required
                   placeholder="ABC-123"
+                  error={!!formErrors.placa}
+                  helperText={formErrors.placa}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -634,8 +749,16 @@ const Vehiculos = () => {
                   fullWidth
                   label="Marca"
                   value={formData.marca}
-                  onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, marca: e.target.value });
+                    if (formErrors.marca) {
+                      setFormErrors(prev => ({ ...prev, marca: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('marca')}
                   required
+                  error={!!formErrors.marca}
+                  helperText={formErrors.marca}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -643,8 +766,16 @@ const Vehiculos = () => {
                   fullWidth
                   label="Modelo"
                   value={formData.modelo}
-                  onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, modelo: e.target.value });
+                    if (formErrors.modelo) {
+                      setFormErrors(prev => ({ ...prev, modelo: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('modelo')}
                   required
+                  error={!!formErrors.modelo}
+                  helperText={formErrors.modelo}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -653,9 +784,17 @@ const Vehiculos = () => {
                   label="Año"
                   type="number"
                   value={formData.año}
-                  onChange={(e) => setFormData({ ...formData, año: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, año: e.target.value });
+                    if (formErrors.año) {
+                      setFormErrors(prev => ({ ...prev, año: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('año')}
                   required
                   inputProps={{ min: 1990, max: new Date().getFullYear() + 1 }}
+                  error={!!formErrors.año}
+                  helperText={formErrors.año}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -679,9 +818,17 @@ const Vehiculos = () => {
                   label="Capacidad de Carga (kg)"
                   type="number"
                   value={formData.capacidad_kg}
-                  onChange={(e) => setFormData({ ...formData, capacidad_kg: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, capacidad_kg: e.target.value });
+                    if (formErrors.capacidad_kg) {
+                      setFormErrors(prev => ({ ...prev, capacidad_kg: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('capacidad_kg')}
                   required
                   inputProps={{ min: 0 }}
+                  error={!!formErrors.capacidad_kg}
+                  helperText={formErrors.capacidad_kg}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -689,8 +836,16 @@ const Vehiculos = () => {
                   fullWidth
                   label="Color"
                   value={formData.color}
-                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, color: e.target.value });
+                    if (formErrors.color) {
+                      setFormErrors(prev => ({ ...prev, color: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('color')}
                   required
+                  error={!!formErrors.color}
+                  helperText={formErrors.color}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -713,8 +868,16 @@ const Vehiculos = () => {
                   fullWidth
                   label="Número de Motor"
                   value={formData.numero_motor}
-                  onChange={(e) => setFormData({ ...formData, numero_motor: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, numero_motor: e.target.value });
+                    if (formErrors.numero_motor) {
+                      setFormErrors(prev => ({ ...prev, numero_motor: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('numero_motor')}
                   required
+                  error={!!formErrors.numero_motor}
+                  helperText={formErrors.numero_motor}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -722,8 +885,16 @@ const Vehiculos = () => {
                   fullWidth
                   label="Número de Chasis"
                   value={formData.numero_chasis}
-                  onChange={(e) => setFormData({ ...formData, numero_chasis: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, numero_chasis: e.target.value });
+                    if (formErrors.numero_chasis) {
+                      setFormErrors(prev => ({ ...prev, numero_chasis: '' }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('numero_chasis')}
                   required
+                  error={!!formErrors.numero_chasis}
+                  helperText={formErrors.numero_chasis}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>

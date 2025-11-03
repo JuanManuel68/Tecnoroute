@@ -64,7 +64,6 @@ const ModernNavbar = () => {
     { label: 'Clientes', path: '/admin/clientes', icon: UsersIcon, category: 'users' },
     { label: 'Conductores', path: '/admin/conductores', icon: UsersIcon, category: 'users' },
     { label: 'Vehículos', path: '/admin/vehiculos', icon: TruckIcon, category: 'logistics' },
-    { label: 'Rutas', path: '/admin/rutas', icon: MapPinIcon, category: 'logistics' },
     { label: 'Envíos', path: '/admin/envios', icon: ClipboardDocumentListIcon, category: 'logistics' },
     { label: 'Seguimiento', path: '/admin/seguimiento', icon: CursorArrowRaysIcon, category: 'logistics' },
   ];
