@@ -18,16 +18,32 @@ const ModernRegister = () => {
   const { register, getDashboardRoute } = useAuth();
 
   const cities = [
-    'Bogotá',
-    'Soacha',
-    'Chía',
-    'Zipaquirá',
-    'Cota',
-    'Funza',
-    'Mosquera',
-    'Madrid',
-    'Facatativá',
-    'Cajicá'
+    'Medellín',
+    'Cali',
+    'Barranquilla',
+    'Cartagena',
+    'Bucaramanga',
+    'Pereira',
+    'Manizales',
+    'Armenia',
+    'Cúcuta',
+    'Ibagué',
+    'Neiva',
+    'Villavicencio',
+    'Tunja',
+    'Santa Marta',
+    'Montería',
+    'Sincelejo',
+    'Popayán',
+    'Pasto',
+    'Valledupar',
+    'Floridablanca',
+    'Palmira',
+    'Yopal',
+    'Riohacha',
+    'Quibdó',
+    'Arauca',
+    'Leticia'
   ];
 
   const [formData, setFormData] = useState({
@@ -431,6 +447,7 @@ const ModernRegister = () => {
           </div>
         </div>
       </div>
+      
     </div>
   );
 };

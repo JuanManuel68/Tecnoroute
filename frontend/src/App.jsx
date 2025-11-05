@@ -28,6 +28,9 @@ import ConductorDashboard from './pages/ConductorDashboard';
 import DriverOrders from './components/DriverOrders';
 import ProductDetail from './pages/ProductDetail';
 import ManualUsuario from './pages/ManualUsuario'; // ✅ Importación añadida
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const theme = createTheme({
   palette: {

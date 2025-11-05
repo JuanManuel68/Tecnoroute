@@ -21,7 +21,7 @@ const ModernCheckout = () => {
   
   // Ciudades disponibles
   const cities = [
-    'Bogotá',
+'Bogotá',
     'Soacha',
     'Chía',
     'Zipaquirá',
@@ -30,7 +30,35 @@ const ModernCheckout = () => {
     'Mosquera',
     'Madrid',
     'Facatativá',
-    'Cajicá'
+    'Cajicá',
+    
+    // Principales ciudades
+    'Medellín',
+    'Cali',
+    'Barranquilla',
+    'Cartagena',
+    'Bucaramanga',
+    'Pereira',
+    'Manizales',
+    'Armenia',
+    'Cúcuta',
+    'Ibagué',
+    'Neiva',
+    'Villavicencio',
+    'Tunja',
+    'Santa Marta',
+    'Montería',
+    'Sincelejo',
+    'Popayán',
+    'Pasto',
+    'Valledupar',
+    'Floridablanca',
+    'Palmira',
+    'Yopal',
+    'Riohacha',
+    'Quibdó',
+    'Arauca',
+    'Leticia'
   ];
   
   const [orderComplete, setOrderComplete] = useState(false);
@@ -686,7 +714,14 @@ const ModernCheckout = () => {
           </div>
         </div>
       </div>
+                  {/* Footer */}
+      <footer className="bg-gray-900 text-gray-300 py-6 mt-8 text-center">
+        <p className="text-sm">
+          © {new Date().getFullYear()} <span className="font-semibold text-white">TuEmpresa</span>. Todos los derechos reservados.
+        </p>
+      </footer>
     </div>
+    
   );
 };
 
