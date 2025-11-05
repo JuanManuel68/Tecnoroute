@@ -380,7 +380,12 @@ const ModernProducts = () => {
           </div>
         </div>
       )}
+            {/* Footer / Derechos de Autor */}
+      <footer className="py-6 bg-gray-900 text-white text-center">
+        &copy; {new Date().getFullYear()} TecnoRoute. Todos los derechos reservados.
+      </footer>
     </div>
+    
   );
 };
 
