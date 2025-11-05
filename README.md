@@ -12,6 +12,8 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser
+python create_products.py migrate
+python manage.py runserver
 
 # 2. Frontend (nueva terminal)
 cd frontend
