@@ -546,6 +546,12 @@ const ModernDashboard = () => {
               </div>
             </div>
           </div>
+                {/* Footer */}
+      <footer className="mt-8 py-6 bg-gray-900 text-white text-center">
+        <p className="text-sm">
+          © {new Date().getFullYear()} <span className="font-semibold">TecnoRoute</span>. Todos los derechos reservados.
+        </p>
+      </footer>
         </div>
 
   );
