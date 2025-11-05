@@ -86,8 +86,8 @@ class ConductorViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['estado', 'activo']
     search_fields = ['nombres', 'apellidos', 'cedula', 'licencia']
-    ordering_fields = ['nombre', 'fecha_contratacion']
-    ordering = ['nombre']
+    ordering_fields = ['nombres', 'apellidos', 'fecha_contratacion']
+    ordering = ['nombres']
     
     def create(self, request, *args, **kwargs):
         """Create conductor with user authentication account"""
@@ -171,10 +171,51 @@ class ConductorViewSet(viewsets.ModelViewSet):
                 
                 # Prepare response
                 response_data = serializer.data
-                # If password was auto-generated, include it in response for admin to communicate to conductor
+                # If password was auto-generated, include it in response and send email
                 if not data.get('password'):
                     response_data['password_temporal'] = password
-                    response_data['mensaje'] = f'Conductor creado. Contraseña temporal: {password} - Comuníquela al conductor.'
+                    response_data['mensaje'] = f'Conductor creado. Contraseña temporal enviada al correo {data.get("email")}.'
+                    
+                    # Send password via email
+                    try:
+                        from django.core.mail import send_mail
+                        from django.conf import settings
+                        
+                        subject = 'Bienvenido a TecnoRoute - Credenciales de Acceso'
+                        message = f'''
+¡Hola {nombres} {apellidos}!
+
+Bienvenido a TecnoRoute. Has sido registrado como conductor en nuestro sistema.
+
+Tus credenciales de acceso son:
+
+Usuario/Email: {data.get("email")}
+Contraseña temporal: {password}
+
+Por seguridad, te recomendamos cambiar tu contraseña al iniciar sesión por primera vez.
+
+Puedes acceder al sistema en: http://localhost:3000/login
+
+Si tienes alguna pregunta, no dudes en contactarnos.
+
+Saludos,
+Equipo de TecnoRoute
+                        '''
+                        
+                        send_mail(
+                            subject,
+                            message,
+                            settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@tecnoroute.com',
+                            [data.get('email')],
+                            fail_silently=True,
+                        )
+                        
+                        print(f"✅ Email enviado a {data.get('email')} con contraseña: {password}")
+                        response_data['email_enviado'] = True
+                    except Exception as e:
+                        print(f"❌ Error enviando email: {e}")
+                        response_data['email_enviado'] = False
+                        response_data['mensaje'] += f' (No se pudo enviar el email: {str(e)})'
                 
                 return Response(response_data, status=status.HTTP_201_CREATED)
                 
@@ -258,9 +299,35 @@ class ConductorViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def guardar_datos_vehiculo(self, request):
         """Guardar datos temporales del vehículo del conductor"""
+        print(f"\n=== GUARDAR DATOS VEHICULO ===")
+        print(f"User: {request.user}")
+        print(f"User email: {request.user.email}")
+        print(f"Data received: {request.data}")
         try:
             # Buscar conductor por email del usuario autenticado
             conductor = Conductor.objects.get(email=request.user.email)
+            print(f"Conductor encontrado: {conductor.nombres} {conductor.apellidos}")
+            
+            # Validar que la placa no esté siendo usada por otro conductor
+            placa = request.data.get('placa', '').strip().upper()
+            if placa:
+                # Verificar si otro conductor ya tiene esta placa temporal
+                other_conductor = Conductor.objects.filter(
+                    placa_temporal=placa
+                ).exclude(id=conductor.id).first()
+                
+                if other_conductor:
+                    return Response({
+                        'error': f'La placa {placa} ya está registrada por otro conductor'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Verificar si la placa ya existe en vehículos
+                from .models import Vehiculo
+                vehiculo_existente = Vehiculo.objects.filter(placa=placa).first()
+                if vehiculo_existente:
+                    return Response({
+                        'error': f'La placa {placa} ya está registrada en el sistema'
+                    }, status=status.HTTP_400_BAD_REQUEST)
             
             # Guardar datos temporales
             conductor.placa_temporal = request.data.get('placa', '').strip().upper()
@@ -271,9 +338,11 @@ class ConductorViewSet(viewsets.ModelViewSet):
             conductor.capacidad_kg_temporal = request.data.get('capacidad_kg')
             conductor.color_vehiculo_temporal = request.data.get('color', 'Blanco').strip()
             conductor.combustible_temporal = request.data.get('combustible', 'gasolina')
-            conductor.numero_motor_temporal = request.data.get('numero_motor', '').strip()
-            conductor.numero_chasis_temporal = request.data.get('numero_chasis', '').strip()
+            conductor.capacidad_motor_temporal = request.data.get('capacidad_motor')
             conductor.save()
+            print(f"Datos guardados exitosamente")
+            print(f"Placa temporal: {conductor.placa_temporal}")
+            print(f"Marca temporal: {conductor.marca_vehiculo_temporal}")
             
             return Response({
                 'message': 'Datos del vehículo guardados exitosamente',
@@ -326,14 +395,12 @@ class VehiculoViewSet(viewsets.ModelViewSet):
                 data['tipo'] = conductor.tipo_vehiculo_temporal or 'camion'
             if not data.get('capacidad_kg'):
                 data['capacidad_kg'] = conductor.capacidad_kg_temporal or 1000
+            if not data.get('capacidad_motor'):
+                data['capacidad_motor'] = conductor.capacidad_motor_temporal
             if not data.get('color'):
                 data['color'] = conductor.color_vehiculo_temporal or 'Blanco'
             if not data.get('combustible'):
                 data['combustible'] = conductor.combustible_temporal or 'gasolina'
-            if not data.get('numero_motor'):
-                data['numero_motor'] = conductor.numero_motor_temporal or ''
-            if not data.get('numero_chasis'):
-                data['numero_chasis'] = conductor.numero_chasis_temporal or ''
             
             # Asignar el conductor automáticamente
             data['conductor_asignado'] = conductor.id
@@ -356,6 +423,7 @@ class VehiculoViewSet(viewsets.ModelViewSet):
             conductor.año_vehiculo_temporal = None
             conductor.tipo_vehiculo_temporal = None
             conductor.capacidad_kg_temporal = None
+            conductor.capacidad_motor_temporal = None
             conductor.color_vehiculo_temporal = None
             conductor.combustible_temporal = None
             conductor.numero_motor_temporal = None

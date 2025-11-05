@@ -79,24 +79,32 @@ const ModernCheckout = () => {
     let formattedValue = value;
     let updatedData = { [name]: formattedValue };
     
-    // Format card number with spaces
+    // Format card number with spaces (solo números)
     if (name === 'cardNumber') {
-      formattedValue = value.replace(/\s/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
+      const onlyNumbers = value.replace(/\D/g, '');
+      formattedValue = onlyNumbers.replace(/(\d{4})(?=\d)/g, '$1 ');
     }
     
-    // Format expiry date
+    // Format expiry date (solo números)
     if (name === 'expiryDate') {
-      formattedValue = value.replace(/\D/g, '').replace(/(\d{2})(\d{1,2})/, '$1/$2');
+      const onlyNumbers = value.replace(/\D/g, '');
+      formattedValue = onlyNumbers.replace(/(\d{2})(\d{1,2})/, '$1/$2');
     }
     
-    // Format CVV (only numbers)
+    // Format CVV (solo números)
     if (name === 'cvv') {
       formattedValue = value.replace(/\D/g, '');
     }
     
-    // Format phone number
+    // Format phone number (solo números)
     if (name === 'phone') {
-      formattedValue = value.replace(/\D/g, '').replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, '+$1 ($2) $3-$4');
+      const onlyNumbers = value.replace(/\D/g, '');
+      // Solo formatear si hay números
+      if (onlyNumbers.length > 0) {
+        formattedValue = onlyNumbers;
+      } else {
+        formattedValue = '';
+      }
     }
     
     updatedData[name] = formattedValue;
@@ -226,7 +234,12 @@ const ModernCheckout = () => {
     }
   };
 
-  const formatPrice = (price) => `$${Number(price).toLocaleString('es-CO')}`;
+  const formatPrice = (price) => new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(price);
   const subtotal = getCartTotal();
   const tax = subtotal * 0.1;
   const shipping = 0;
@@ -486,6 +499,8 @@ const ModernCheckout = () => {
                       type="text"
                       name="cardNumber"
                       required
+                      inputMode="numeric"
+                      pattern="[0-9\s]*"
                       value={formData.cardNumber}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
@@ -512,6 +527,8 @@ const ModernCheckout = () => {
                         type="text"
                         name="expiryDate"
                         required
+                        inputMode="numeric"
+                        pattern="[0-9/]{5}"
                         value={formData.expiryDate}
                         onChange={handleInputChange}
                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
@@ -537,6 +554,8 @@ const ModernCheckout = () => {
                         type="text"
                         name="cvv"
                         required
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={formData.cvv}
                         onChange={handleInputChange}
                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${

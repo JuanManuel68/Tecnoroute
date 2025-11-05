@@ -135,9 +135,11 @@ const PedidosAdmin = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('es-CO', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
@@ -475,7 +477,9 @@ const PedidosAdmin = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                           <PersonIcon fontSize="small" sx={{ mr: 1 }} />
                           <Box>
-                            <Typography variant="body2">{conductor.nombre}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              {conductor.nombre} - CC: {conductor.cedula}
+                            </Typography>
                             <Typography variant="caption" color="text.secondary">
                               Licencia: {conductor.licencia} | Tel: {conductor.telefono}
                             </Typography>

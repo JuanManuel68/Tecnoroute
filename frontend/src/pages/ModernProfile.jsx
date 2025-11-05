@@ -11,7 +11,8 @@ import {
   HeartIcon,
   CogIcon,
   ExclamationTriangleIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
 
@@ -49,6 +50,7 @@ const ModernProfile = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [passwordErrors, setPasswordErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
@@ -300,9 +302,56 @@ const ModernProfile = () => {
     }
   };
 
+  const validatePassword = (password) => {
+    const errors = [];
+    
+    if (password.length < 8) {
+      errors.push('al menos 8 caracteres');
+    }
+    if (!/(?=.*[a-z])/.test(password)) {
+      errors.push('una letra minúscula');
+    }
+    if (!/(?=.*[A-Z])/.test(password)) {
+      errors.push('una letra mayúscula');
+    }
+    if (!/(?=.*\d)/.test(password)) {
+      errors.push('un número');
+    }
+    if (!/(?=.*[@$!%*?&])/.test(password)) {
+      errors.push('un carácter especial (@$!%*?&)');
+    }
+    
+    return errors;
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({ ...prev, [name]: value }));
+    
+    // Validar nueva contraseña en tiempo real
+    if (name === 'newPassword' && value) {
+      const validationErrors = validatePassword(value);
+      if (validationErrors.length > 0) {
+        setPasswordErrors({ newPassword: `La contraseña debe contener: ${validationErrors.join(', ')}` });
+      } else {
+        setPasswordErrors({ newPassword: '' });
+      }
+    }
+    
+    // Validar confirmación de contraseña
+    if (name === 'confirmPassword') {
+      if (value !== passwordData.newPassword) {
+        setPasswordErrors(prev => ({ ...prev, confirmPassword: 'Las contraseñas no coinciden' }));
+      } else {
+        setPasswordErrors(prev => ({ ...prev, confirmPassword: '' }));
+      }
+    }
+  };
+
   const handleChangePassword = async () => {
     try {
       setErrors({});
+      setPasswordErrors({});
       
       // Validaciones
       if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
@@ -310,13 +359,15 @@ const ModernProfile = () => {
         return;
       }
       
-      if (passwordData.newPassword !== passwordData.confirmPassword) {
-        setErrors({ password: 'Las contraseñas no coinciden' });
+      // Validar contraseña segura
+      const passwordValidationErrors = validatePassword(passwordData.newPassword);
+      if (passwordValidationErrors.length > 0) {
+        setErrors({ password: `La contraseña debe contener: ${passwordValidationErrors.join(', ')}` });
         return;
       }
       
-      if (passwordData.newPassword.length < 8) {
-        setErrors({ password: 'La contraseña debe tener al menos 8 caracteres' });
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setErrors({ password: 'Las contraseñas no coinciden' });
         return;
       }
       
@@ -899,40 +950,84 @@ const ModernProfile = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Contraseña Actual
                 </label>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Ingresa tu contraseña actual"
-                />
+                <div className="relative">
+                  <input
+                    type="password"
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Ingresa tu contraseña actual"
+                  />
+                  <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nueva Contraseña
                 </label>
-                <input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Mínimo 8 caracteres"
-                />
+                <div className="relative">
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    className={`w-full px-4 py-3 pl-11 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                      passwordErrors.newPassword ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número, 1 especial"
+                  />
+                  <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
+                {passwordErrors.newPassword && (
+                  <p className="text-orange-600 text-xs mt-1">{passwordErrors.newPassword}</p>
+                )}
+                <div className="mt-2 text-xs text-gray-600">
+                  <p className="font-medium mb-1">✓ La contraseña debe contener:</p>
+                  <ul className="list-disc list-inside space-y-0.5 pl-2">
+                    <li className={passwordData.newPassword.length >= 8 ? 'text-green-600' : ''}>
+                      Al menos 8 caracteres
+                    </li>
+                    <li className={/(?=.*[a-z])/.test(passwordData.newPassword) ? 'text-green-600' : ''}>
+                      Una letra minúscula
+                    </li>
+                    <li className={/(?=.*[A-Z])/.test(passwordData.newPassword) ? 'text-green-600' : ''}>
+                      Una letra mayúscula
+                    </li>
+                    <li className={/(?=.*\d)/.test(passwordData.newPassword) ? 'text-green-600' : ''}>
+                      Un número
+                    </li>
+                    <li className={/(?=.*[@$!%*?&])/.test(passwordData.newPassword) ? 'text-green-600' : ''}>
+                      Un carácter especial (@$!%*?&)
+                    </li>
+                  </ul>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Confirmar Nueva Contraseña
                 </label>
-                <input
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Repite la nueva contraseña"
-                />
+                <div className="relative">
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    className={`w-full px-4 py-3 pl-11 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                      passwordErrors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Repite la nueva contraseña"
+                  />
+                  <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
+                {passwordErrors.confirmPassword && (
+                  <p className="text-red-600 text-xs mt-1">{passwordErrors.confirmPassword}</p>
+                )}
               </div>
               {errors.password && (
-                <p className="text-red-600 text-sm">{errors.password}</p>
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {errors.password}
+                </div>
               )}
               <div className="flex space-x-3">
                 <button

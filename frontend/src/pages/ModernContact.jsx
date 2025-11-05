@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   PhoneIcon,
   EnvelopeIcon,
@@ -11,8 +11,10 @@ import {
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import { contactAPI } from '../services/apiService';
+import { useAuth } from '../context/AuthContext';
 
 const ModernContact = () => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -24,6 +26,22 @@ const ModernContact = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+
+  // Autocompletar datos si el usuario está autenticado
+  useEffect(() => {
+    if (user) {
+      const nameParts = user.name ? user.name.split(' ') : [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      setFormData(prev => ({
+        ...prev,
+        nombres: firstName,
+        apellidos: lastName,
+        email: user.email || ''
+      }));
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -214,3 +214,24 @@ LOGGING = {
         },
     },
 }
+
+# Email Configuration
+# Verifica si hay configuración de email en variables de entorno
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=None)
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=None)
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    # Configuración SMTP real (Gmail)
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=f'TecnoRoute <{EMAIL_HOST_USER}>')
+    print(f"\n✅ Email configurado: Los correos se enviarán desde {EMAIL_HOST_USER}\n")
+else:
+    # Configuración de desarrollo (imprime en consola)
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'TecnoRoute <noreply@tecnoroute.com>'
+    print("\n⚠️ Email en modo desarrollo: Los correos se imprimirán en la consola")
+    print("Para enviar emails reales, crea un archivo .env con tu configuración de Gmail")
+    print("Ver .env.example para instrucciones\n")

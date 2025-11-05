@@ -4,7 +4,8 @@ from . import views
 from .auth_views import (
     AuthView, RegisterView, LogoutView, UserProfileView, ChangePasswordView,
     CategoriaViewSet, ProductoViewSet, CarritoView, PedidoViewSet,
-    test_connection, check_email, check_phone
+    test_connection, check_email, check_phone, send_verification_code, verify_code,
+    request_password_reset, verify_reset_code, reset_password
 )
 
 router = DefaultRouter()
@@ -28,6 +29,11 @@ urlpatterns = [
     path('auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('auth/check-email/', check_email, name='check-email'),
     path('auth/check-phone/', check_phone, name='check-phone'),
+    path('auth/send-verification-code/', send_verification_code, name='send-verification-code'),
+    path('auth/verify-code/', verify_code, name='verify-code'),
+    path('auth/request-password-reset/', request_password_reset, name='request-password-reset'),
+    path('auth/verify-reset-code/', verify_reset_code, name='verify-reset-code'),
+    path('auth/reset-password/', reset_password, name='reset-password'),
     # Carrito
     path('carrito/', CarritoView.as_view(), name='carrito'),
     # Test

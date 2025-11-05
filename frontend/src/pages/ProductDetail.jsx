@@ -11,18 +11,19 @@ import {
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { productosAPI } from '../services/apiService';
+import { productosAPI, carritoAPI } from '../services/apiService';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, refreshCart } = useCart();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   useEffect(() => {
     loadProduct();
@@ -83,10 +84,22 @@ const ProductDetail = () => {
   const handleAddToCart = async () => {
     try {
       setAddingToCart(true);
-      await addToCart(product.id, quantity);
-      // Show success message or notification here
+      
+      // Intentar agregar al carrito usando la API directamente
+      const response = await carritoAPI.addItem(product.id, quantity);
+      
+      // Refrescar el carrito en el contexto
+      if (refreshCart) {
+        await refreshCart();
+      }
+      
+      // Mostrar mensaje de éxito
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+      
     } catch (error) {
       console.error('Error adding to cart:', error);
+      alert('Error al agregar al carrito. Por favor intenta de nuevo.');
     } finally {
       setAddingToCart(false);
     }
@@ -151,6 +164,16 @@ const ProductDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4">
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="fixed top-20 right-4 z-50 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 animate-fade-in">
+            <ShoppingCartIcon className="w-6 h-6" />
+            <div>
+              <p className="font-semibold">¡Producto agregado!</p>
+              <p className="text-sm">Se agregó {quantity} {quantity === 1 ? 'unidad' : 'unidades'} al carrito</p>
+            </div>
+          </div>
+        )}
         {/* Breadcrumb */}
         <div className="mb-6">
           <button
@@ -283,10 +306,10 @@ const ProductDetail = () => {
               <div className="space-y-3">
                 <button
                   onClick={handleAddToCart}
-                  disabled={!product.disponible || product.stock === 0 || addingToCart}
+                  disabled={(!product.disponible && product.disponible !== undefined) || (product.stock !== undefined && product.stock === 0) || addingToCart}
                   className={`w-full flex items-center justify-center space-x-2 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
-                    product.disponible && product.stock > 0
-                      ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                    (product.disponible || product.disponible === undefined) && (product.stock === undefined || product.stock > 0)
+                      ? 'bg-primary-600 hover:bg-primary-700 text-white cursor-pointer'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >

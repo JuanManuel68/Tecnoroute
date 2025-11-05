@@ -43,6 +43,11 @@ class ClienteSerializer(serializers.ModelSerializer):
 
 
 class ConductorSerializer(serializers.ModelSerializer):
+    nombre = serializers.SerializerMethodField()
+    
+    def get_nombre(self, obj):
+        return obj.nombre_completo
+    
     class Meta:
         model = Conductor
         fields = '__all__'

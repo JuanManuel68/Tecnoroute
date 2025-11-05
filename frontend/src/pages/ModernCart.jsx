@@ -53,7 +53,14 @@ const ModernCart = () => {
     );
   }
 
-  const formatPrice = (price) => `$${Number(price).toLocaleString('es-CO')}`;
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-12">

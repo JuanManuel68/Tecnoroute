@@ -12,7 +12,8 @@ import {
   DocumentTextIcon,
   PencilIcon,
   TrashIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  MapIcon
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon as CheckCircleIconSolid,
@@ -20,7 +21,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { pedidosAPI } from '../services/apiService';
+import { pedidosAPI, carritoAPI } from '../services/apiService';
 import { useToast } from '../components/Toast';
 import EditOrderModal from '../components/EditOrderModal';
 
@@ -514,6 +515,17 @@ const ModernOrders = () => {
                             <span>Ver Detalles Completos</span>
                           </button>
                           
+                          {/* Botón de seguimiento para pedidos confirmados, en ruta o entregados */}
+                          {(order.estado === 'confirmado' || order.estado === 'en_curso' || order.estado === 'enviado' || order.estado === 'entregado') && (
+                            <button
+                              onClick={() => navigate(`/seguimiento?codigo=${order.numero_pedido}`)}
+                              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+                            >
+                              <MapIcon className="w-5 h-5" />
+                              <span>Rastrear Pedido</span>
+                            </button>
+                          )}
+                          
                           {/* Botones de editar y eliminar solo para pedidos pendientes */}
                           {canEditOrDelete(order) && (
                             <>
@@ -667,10 +679,28 @@ const ModernOrders = () => {
                             </p>
                           )}
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end space-y-2">
                           <p className="font-semibold text-gray-900">
                             {formatPrice(subtotal)}
                           </p>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await carritoAPI.addItem({
+                                  producto_id: producto?.id || item.producto_id,
+                                  cantidad: 1
+                                });
+                                showToast('Producto agregado al carrito', 'success');
+                              } catch (error) {
+                                console.error('Error agregando al carrito:', error);
+                                showToast('Error al agregar al carrito', 'error');
+                              }
+                            }}
+                            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-xs font-semibold py-1.5 px-3 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center space-x-1"
+                          >
+                            <ShoppingBagIcon className="w-3 h-3" />
+                            <span>Agregar</span>
+                          </button>
                         </div>
                       </div>
                     );

@@ -56,39 +56,60 @@ const ModernDashboard = () => {
         if (isAdmin()) {
           // Si es admin, cargar datos de pedidos
           try {
-            const [
-              estadisticasPedidos,
-              pedidosRecientesRes,
-              clientesRes,
-              conductoresRes,
-              vehiculosRes,
-              rutasRes,
-            ] = await Promise.all([
-              pedidosAPI.getEstadisticas(),
-              pedidosAPI.getRecientes(10),
-              apiService.get('/api/clientes/'),
-              apiService.get('/api/conductores/'),
-              apiService.get('/api/vehiculos/'),
-              apiService.get('/api/rutas/'),
+            // Cargar datos de forma independiente para mejor manejo de errores
+            const [estadisticasPedidos, pedidosRecientesRes] = await Promise.all([
+              pedidosAPI.getEstadisticas().catch(err => ({ data: {} })),
+              pedidosAPI.getRecientes(10).catch(err => ({ data: [] })),
             ]);
+
+            // Cargar datos de logística de forma independiente
+            let totalClientes = 0;
+            let totalConductores = 0;
+            let totalVehiculos = 0;
+            let totalRutas = 0;
+
+            try {
+              const clientesRes = await apiService.get('/api/clientes/');
+              totalClientes = Array.isArray(clientesRes.data) ? clientesRes.data.length : 0;
+            } catch (err) {
+              console.warn('No se pudieron cargar clientes:', err.message);
+            }
+
+            try {
+              const conductoresRes = await apiService.get('/api/conductores/');
+              totalConductores = Array.isArray(conductoresRes.data) ? conductoresRes.data.length : 0;
+            } catch (err) {
+              console.warn('No se pudieron cargar conductores:', err.message);
+            }
+
+            try {
+              const vehiculosRes = await apiService.get('/api/vehiculos/');
+              totalVehiculos = Array.isArray(vehiculosRes.data) ? vehiculosRes.data.length : 0;
+            } catch (err) {
+              console.warn('No se pudieron cargar vehículos:', err.message);
+            }
+
+            // Rutas endpoint no existe - mantener en 0 por ahora
+            // En el futuro se puede implementar un endpoint de rutas si es necesario
+            totalRutas = 0;
 
             setStats({
               // Datos básicos de logística
-              totalClientes: clientesRes.data.length,
-              totalConductores: conductoresRes.data.length,
-              totalVehiculos: vehiculosRes.data.length,
-              totalRutas: rutasRes.data.length,
+              totalClientes,
+              totalConductores,
+              totalVehiculos,
+              totalRutas,
               // Datos de pedidos
-              totalPedidos: estadisticasPedidos.data.total_pedidos || 0,
-              totalIngresos: estadisticasPedidos.data.total_ingresos || 0,
-              pedidosHoy: estadisticasPedidos.data.pedidos_hoy || 0,
-              pedidosSemana: estadisticasPedidos.data.pedidos_semana || 0,
-              pedidosMes: estadisticasPedidos.data.pedidos_mes || 0,
-              pedidosPendientes: estadisticasPedidos.data.pedidos_pendientes || 0,
-              pedidosConfirmados: estadisticasPedidos.data.pedidos_confirmados || 0,
-              pedidosEnviados: estadisticasPedidos.data.pedidos_enviados || 0,
-              pedidosEntregados: estadisticasPedidos.data.pedidos_entregados || 0,
-              pedidosCancelados: estadisticasPedidos.data.pedidos_cancelados || 0,
+              totalPedidos: estadisticasPedidos.data?.total_pedidos || 0,
+              totalIngresos: estadisticasPedidos.data?.total_ingresos || 0,
+              pedidosHoy: estadisticasPedidos.data?.pedidos_hoy || 0,
+              pedidosSemana: estadisticasPedidos.data?.pedidos_semana || 0,
+              pedidosMes: estadisticasPedidos.data?.pedidos_mes || 0,
+              pedidosPendientes: estadisticasPedidos.data?.pedidos_pendientes || 0,
+              pedidosConfirmados: estadisticasPedidos.data?.pedidos_confirmados || 0,
+              pedidosEnviados: estadisticasPedidos.data?.pedidos_enviados || 0,
+              pedidosEntregados: estadisticasPedidos.data?.pedidos_entregados || 0,
+              pedidosCancelados: estadisticasPedidos.data?.pedidos_cancelados || 0,
               // Reset envios stats for admin
               totalEnvios: 0,
               enviosPendientes: 0,
@@ -96,7 +117,7 @@ const ModernDashboard = () => {
               enviosEntregados: 0,
             });
 
-            setPedidosRecientes(pedidosRecientesRes.data || []);
+            setPedidosRecientes(Array.isArray(pedidosRecientesRes.data) ? pedidosRecientesRes.data : []);
           } catch (adminError) {
             console.error('Error cargando datos de admin:', adminError);
             // Fallback básico
@@ -127,7 +148,6 @@ const ModernDashboard = () => {
             clientesRes,
             conductoresRes,
             vehiculosRes,
-            rutasRes,
             enviosRes,
             enviosPendientesRes,
             enviosTransitoRes,
@@ -135,7 +155,6 @@ const ModernDashboard = () => {
             apiService.get('/api/clientes/'),
             apiService.get('/api/conductores/'),
             apiService.get('/api/vehiculos/'),
-            apiService.get('/api/rutas/'),
             apiService.get('/api/envios/'),
             apiService.get('/api/envios/pendientes/'),
             apiService.get('/api/envios/en_transito/'),
@@ -149,7 +168,7 @@ const ModernDashboard = () => {
             totalClientes: clientesRes.data.length,
             totalConductores: conductoresRes.data.length,
             totalVehiculos: vehiculosRes.data.length,
-            totalRutas: rutasRes.data.length,
+            totalRutas: 0, // Rutas endpoint no implementado
             totalEnvios: enviosRes.data.length,
             enviosPendientes: enviosPendientesRes.data.length,
             enviosEnTransito: enviosTransitoRes.data.length,
@@ -195,9 +214,11 @@ const ModernDashboard = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('es-CO', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   TruckIcon,
   ClockIcon,
@@ -32,10 +32,9 @@ const ConductorDashboard = () => {
     año: new Date().getFullYear(),
     tipo: 'camion',
     capacidad_kg: '1000',
+    capacidad_motor: '',
     color: 'Blanco',
-    combustible: 'gasolina',
-    numero_motor: '',
-    numero_chasis: ''
+    combustible: 'gasolina'
   });
   const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '' });
   const [confirmCompleteModal, setConfirmCompleteModal] = useState(false);
@@ -43,6 +42,7 @@ const ConductorDashboard = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const hasCompletedWelcome = useRef(false); // Ref para controlar si ya completó el welcome
 
   // Cargar pedidos asignados al conductor
   const loadPendingOrders = useCallback(async () => {
@@ -84,10 +84,16 @@ const ConductorDashboard = () => {
     console.log('User role:', user?.role);
     loadPendingOrders();
     
-    // Check if this is the first login
-    const hasSeenWelcome = localStorage.getItem(`conductor_welcome_${user?.id}`);
-    if (!hasSeenWelcome && user?.role === 'conductor') {
-      setShowWelcomeModal(true);
+    // Check if conductor needs to complete vehicle registration
+    // Modal must show if conductor doesn't have placa_temporal (vehicle not registered)
+    if (user?.role === 'conductor' && user?.conductor_info) {
+      const hasVehicleData = user.conductor_info.placa_temporal;
+      console.log('Has vehicle data (placa_temporal):', hasVehicleData);
+      
+      if (!hasVehicleData && !hasCompletedWelcome.current) {
+        console.log('⚠️ Showing welcome modal - vehicle not registered');
+        setShowWelcomeModal(true);
+      }
     }
     
     // Recargar cada 30 segundos
@@ -157,9 +163,9 @@ const ConductorDashboard = () => {
     }
   };
   
-  // Close welcome modal
+  // Close welcome modal (only when vehicle registration is complete)
   const handleCloseWelcome = () => {
-    localStorage.setItem(`conductor_welcome_${user?.id}`, 'true');
+    hasCompletedWelcome.current = true;
     setShowWelcomeModal(false);
     setWelcomeStep(1);
   };
@@ -196,6 +202,15 @@ const ConductorDashboard = () => {
         return;
       }
       
+      if (!/[a-z]/.test(newPassword)) {
+        setErrorModal({
+          open: true,
+          title: '⚠️ Falta Minúscula',
+          message: 'La contraseña debe contener al menos una letra minúscula'
+        });
+        return;
+      }
+      
       if (!/[A-Z]/.test(newPassword)) {
         setErrorModal({
           open: true,
@@ -214,44 +229,80 @@ const ConductorDashboard = () => {
         return;
       }
       
+      if (!/[@$!%*?&]/.test(newPassword)) {
+        setErrorModal({
+          open: true,
+          title: '⚠️ Falta Carácter Especial',
+          message: 'La contraseña debe contener al menos un carácter especial (@$!%*?&)'
+        });
+        return;
+      }
+      
       // Guardar datos del vehículo
-      const vehicleResponse = await fetch('http://localhost:8000/api/conductores/guardar_datos_vehiculo/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify(vehicleData)
-      });
+      let vehicleResponse;
+      try {
+        vehicleResponse = await fetch('http://localhost:8000/api/conductores/guardar_datos_vehiculo/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify(vehicleData)
+        });
+      } catch (fetchError) {
+        throw new Error('Error de conexión. Verifica que el servidor esté corriendo.');
+      }
       
       if (!vehicleResponse.ok) {
-        const errorData = await vehicleResponse.json();
-        throw new Error(errorData.error || 'Error al guardar los datos del vehículo');
+        let errorData;
+        try {
+          errorData = await vehicleResponse.json();
+        } catch (e) {
+          errorData = { error: 'Error desconocido del servidor' };
+        }
+        throw new Error(errorData.error || `Error ${vehicleResponse.status}: ${vehicleResponse.statusText}`);
       }
+      
+      await vehicleResponse.json();
       
       // Cambiar contraseña
-      const passwordResponse = await fetch('http://localhost:8000/api/auth/change-password/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
-          new_password: newPassword
-        })
-      });
-      
-      if (!passwordResponse.ok) {
-        const errorData = await passwordResponse.json();
-        throw new Error(errorData.error || 'Error al cambiar la contraseña');
+      let passwordResponse;
+      try {
+        passwordResponse = await fetch('http://localhost:8000/api/auth/change-password/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({
+            new_password: newPassword
+          })
+        });
+      } catch (fetchError) {
+        throw new Error('Error de conexión al cambiar contraseña.');
       }
       
+      if (!passwordResponse.ok) {
+        let errorData;
+        try {
+          errorData = await passwordResponse.json();
+        } catch (e) {
+          errorData = { error: 'Error desconocido del servidor' };
+        }
+        throw new Error(errorData.error || `Error ${passwordResponse.status}: ${passwordResponse.statusText}`);
+      }
+      
+      // Cerrar modal de bienvenida
       handleCloseWelcome();
-      setErrorModal({
-        open: true,
-        title: '✅ ¡Registro Completado!',
-        message: 'Tus datos se han guardado exitosamente y tu contraseña ha sido actualizada.'
-      });
+      
+      // Esperar un momento para asegurar que el modal se cierre antes de mostrar el de éxito
+      setTimeout(() => {
+        setErrorModal({
+          open: true,
+          title: '✅ ¡Registro Completado!',
+          message: 'Tus datos se han guardado exitosamente y tu contraseña ha sido actualizada.'
+        });
+      }, 100);
     } catch (error) {
       console.error('Error completando registro:', error);
       setErrorModal({
@@ -609,9 +660,9 @@ const ConductorDashboard = () => {
         </div>
       )}
       
-      {/* Welcome Modal */}
+      {/* Welcome Modal - Cannot be dismissed without completing registration */}
       {showWelcomeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full my-8 overflow-hidden animate-fade-in">
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-6 text-white">
               <div className="flex items-center justify-center mb-4">
@@ -700,16 +751,21 @@ const ConductorDashboard = () => {
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Marca <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={vehicleData.marca}
-                          onChange={(e) => setVehicleData({...vehicleData, marca: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="Ej: Toyota"
-                        />
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Marca <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={vehicleData.marca}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value)) {
+                            setVehicleData({...vehicleData, marca: value});
+                          }
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="Ej: Toyota"
+                      />
                       </div>
                       
                       <div>
@@ -765,8 +821,12 @@ const ConductorDashboard = () => {
                         </label>
                         <input
                           type="number"
+                          inputMode="numeric"
                           value={vehicleData.capacidad_kg}
-                          onChange={(e) => setVehicleData({...vehicleData, capacidad_kg: e.target.value})}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            setVehicleData({...vehicleData, capacidad_kg: value});
+                          }}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           placeholder="1000"
                           min="0"
@@ -775,60 +835,55 @@ const ConductorDashboard = () => {
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Color <span className="text-red-500">*</span>
+                          Capacidad Motor (CC) <span className="text-red-500">*</span>
                         </label>
                         <input
-                          type="text"
-                          value={vehicleData.color}
-                          onChange={(e) => setVehicleData({...vehicleData, color: e.target.value})}
+                          type="number"
+                          inputMode="numeric"
+                          value={vehicleData.capacidad_motor}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            setVehicleData({...vehicleData, capacidad_motor: value});
+                          }}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="Ej: Blanco"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Tipo de Combustible <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={vehicleData.combustible}
-                          onChange={(e) => setVehicleData({...vehicleData, combustible: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                          <option value="gasolina">Gasolina</option>
-                          <option value="diesel">Diesel</option>
-                          <option value="electrico">Eléctrico</option>
-                          <option value="hibrido">Híbrido</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Número de Motor (Opcional)
-                        </label>
-                        <input
-                          type="text"
-                          value={vehicleData.numero_motor}
-                          onChange={(e) => setVehicleData({...vehicleData, numero_motor: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="Ej: ABC123456"
+                          placeholder="Ej: 2000"
+                          min="0"
                         />
                       </div>
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Número de Chasis (Opcional)
+                        Color <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        value={vehicleData.numero_chasis}
-                        onChange={(e) => setVehicleData({...vehicleData, numero_chasis: e.target.value})}
+                        value={vehicleData.color}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value)) {
+                            setVehicleData({...vehicleData, color: value});
+                          }
+                        }}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        placeholder="Ej: XYZ987654321"
+                        placeholder="Ej: Blanco"
                       />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tipo de Combustible <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={vehicleData.combustible}
+                        onChange={(e) => setVehicleData({...vehicleData, combustible: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="gasolina">Gasolina</option>
+                        <option value="diesel">Diesel</option>
+                        <option value="electrico">Eléctrico</option>
+                        <option value="hibrido">Híbrido</option>
+                      </select>
                     </div>
                   </div>
                   
@@ -859,8 +914,16 @@ const ConductorDashboard = () => {
                         if (!vehicleData.capacidad_kg || vehicleData.capacidad_kg <= 0) {
                           setErrorModal({
                             open: true,
-                            title: '⚠️ Capacidad Inválida',
+                            title: '⚠️ Capacidad de Carga Inválida',
                             message: 'La capacidad de carga debe ser mayor a 0 kg'
+                          });
+                          return;
+                        }
+                        if (!vehicleData.capacidad_motor || vehicleData.capacidad_motor <= 0) {
+                          setErrorModal({
+                            open: true,
+                            title: '⚠️ Capacidad de Motor Inválida',
+                            message: 'La capacidad del motor debe ser mayor a 0 CC'
                           });
                           return;
                         }
@@ -924,14 +987,16 @@ const ConductorDashboard = () => {
                   </div>
                   
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6 mb-6">
-                    <p className="text-blue-800 text-sm">
-                      <span className="font-semibold">🔒 Requisitos de seguridad:</span>
-                      <ul className="mt-2 ml-4 list-disc space-y-1">
-                        <li>Mínimo 8 caracteres</li>
-                        <li>Al menos una letra mayúscula</li>
-                        <li>Al menos un número</li>
-                      </ul>
+                    <p className="text-blue-800 text-sm font-semibold mb-2">
+                      🔒 Requisitos de seguridad:
                     </p>
+                    <ul className="text-blue-800 text-sm ml-4 list-disc space-y-1">
+                      <li>Mínimo 8 caracteres</li>
+                      <li>Al menos una letra minúscula</li>
+                      <li>Al menos una letra mayúscula</li>
+                      <li>Al menos un número</li>
+                      <li>Al menos un carácter especial (@$!%*?&)</li>
+                    </ul>
                   </div>
                   
                   <div className="flex gap-3">

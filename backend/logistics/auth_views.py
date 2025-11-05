@@ -109,7 +109,7 @@ class AuthView(APIView):
             })
         else:
             return Response({
-                'error': 'Credenciales inválidas o usuario inactivo'
+                'error': 'Correo o contraseña incorrectas'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
 
@@ -195,7 +195,7 @@ class LogoutView(APIView):
 
 
 class UserProfileView(APIView):
-    """Vista para obtener perfil del usuario actual"""
+    """Vista para obtener y actualizar perfil del usuario actual"""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -209,6 +209,57 @@ class UserProfileView(APIView):
         
         serializer = UserProfileSerializer(profile)
         return Response(serializer.data)
+    
+    def put(self, request):
+        """Actualizar perfil del usuario actual"""
+        try:
+            profile = request.user.userprofile
+        except UserProfile.DoesNotExist:
+            profile = UserProfile.objects.create(
+                user=request.user,
+                role='admin' if request.user.is_superuser else 'customer'
+            )
+        
+        # Actualizar datos del usuario
+        user = request.user
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+        email = request.data.get('email')
+        
+        if first_name is not None:
+            user.first_name = first_name
+        if last_name is not None:
+            user.last_name = last_name
+        if email is not None:
+            # Verificar que el email no esté en uso por otro usuario
+            if User.objects.filter(email=email).exclude(id=user.id).exists():
+                return Response({
+                    'error': 'Este correo ya está registrado por otro usuario'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            user.email = email
+            user.username = email  # Actualizar username también
+        
+        user.save()
+        
+        # Actualizar datos del perfil
+        telefono = request.data.get('telefono')
+        direccion = request.data.get('direccion')
+        ciudad = request.data.get('ciudad')
+        
+        if telefono is not None:
+            profile.telefono = telefono
+        if direccion is not None:
+            profile.direccion = direccion
+        if ciudad is not None:
+            profile.ciudad = ciudad
+        
+        profile.save()
+        
+        serializer = UserProfileSerializer(profile)
+        return Response({
+            'message': 'Perfil actualizado exitosamente',
+            'profile': serializer.data
+        })
 
 
 class ChangePasswordView(APIView):
@@ -399,7 +450,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             from .models import Conductor
             try:
                 conductor = Conductor.objects.get(email=self.request.user.email)
-                print(f"Conductor encontrado: {conductor.nombre} (ID: {conductor.id})")
+                print(f"Conductor encontrado: {conductor.nombre_completo} (ID: {conductor.id})")
                 queryset = Pedido.objects.filter(conductor=conductor).select_related('usuario', 'conductor').prefetch_related('items')
                 print(f"Pedidos del conductor: {queryset.count()}")
                 for p in queryset:
@@ -464,6 +515,53 @@ class PedidoViewSet(viewsets.ModelViewSet):
 
             # Limpiar carrito
             carrito.items.all().delete()
+            
+            # AUTO-CREAR ENVÍO automáticamente
+            try:
+                from .models import Envio
+                from datetime import timedelta
+                
+                # Generar número de guía único
+                numero_guia = f'ENV-{uuid.uuid4().hex[:8].upper()}'
+                
+                # Calcular peso estimado basado en los productos
+                peso_total = sum(item.cantidad * 5 for item in pedido.items.all())  # Estimación: 5kg por producto
+                volumen_total = sum(item.cantidad * 0.1 for item in pedido.items.all())  # Estimación: 0.1m³ por producto
+                
+                # Crear descripción de carga
+                productos_str = ', '.join([f"{item.producto.nombre} (x{item.cantidad})" for item in pedido.items.all()])
+                
+                # Crear el envío
+                envio = Envio.objects.create(
+                    numero_guia=numero_guia,
+                    cliente=request.user,
+                    origen='Bodega TecnoRoute',
+                    destino=direccion_envio,
+                    conductor=pedido.conductor if pedido.conductor else None,
+                    descripcion_carga=f"Pedido #{pedido.numero_pedido}: {productos_str}",
+                    peso_kg=peso_total,
+                    volumen_m3=volumen_total,
+                    direccion_recogida='Calle Principal 123, Bogotá',  # Dirección de bodega
+                    direccion_entrega=direccion_envio,
+                    contacto_recogida='Bodega TecnoRoute',
+                    contacto_entrega=f"{request.user.first_name} {request.user.last_name}",
+                    telefono_recogida='3001234567',
+                    telefono_entrega=telefono_contacto,
+                    fecha_recogida_programada=timezone.now(),
+                    fecha_entrega_programada=timezone.now() + timedelta(days=2),
+                    costo_envio=0,  # Envío gratis por ahora
+                    valor_declarado=pedido.total,
+                    estado='pendiente',
+                    prioridad='media',
+                    observaciones=notas
+                )
+                
+                print(f"Envío creado automáticamente: {envio.numero_guia} para pedido {pedido.numero_pedido}")
+                
+            except Exception as e:
+                print(f"Error creando envío automático: {str(e)}")
+                # No fallar el pedido si el envío no se puede crear
+                pass
 
             serializer = PedidoSerializer(pedido)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -502,7 +600,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             
             serializer = PedidoSerializer(pedido)
             return Response({
-                'message': f'Pedido asignado a {conductor.nombre}',
+                'message': f'Pedido asignado a {conductor.nombre_completo}',
                 'pedido': serializer.data
             })
             
@@ -754,6 +852,71 @@ def check_phone(request):
     return Response({'exists': exists})
 
 
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def send_verification_code(request):
+    """Enviar código de verificación al email"""
+    email = request.data.get('email')
+    
+    if not email:
+        return Response({
+            'error': 'Email es requerido'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Verificar que el email no esté registrado
+    if User.objects.filter(email=email).exists():
+        return Response({
+            'error': 'Este correo ya está registrado'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        from user_management.verification import EmailVerificationCode
+        
+        # Crear y enviar código
+        code = EmailVerificationCode.create_code(email)
+        EmailVerificationCode.send_verification_email(email, code)
+        
+        return Response({
+            'success': True,
+            'message': 'Código de verificación enviado',
+            'debug_code': code if hasattr(status, 'DEBUG') else None  # Solo en desarrollo
+        })
+    except Exception as e:
+        return Response({
+            'error': f'Error enviando código: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def verify_code(request):
+    """Verificar código de email"""
+    email = request.data.get('email')
+    code = request.data.get('code')
+    
+    if not email or not code:
+        return Response({
+            'error': 'Email y código son requeridos'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        from user_management.verification import EmailVerificationCode
+        
+        if EmailVerificationCode.verify_code(email, code):
+            return Response({
+                'success': True,
+                'message': 'Código verificado correctamente'
+            })
+        else:
+            return Response({
+                'error': 'Código inválido o expirado'
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            'error': f'Error verificando código: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def test_connection(request):
@@ -765,3 +928,179 @@ def test_connection(request):
         'total_pedidos': total_pedidos,
         'timestamp': '2025-09-25'
     })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def request_password_reset(request):
+    """Enviar código de recuperación de contraseña al email"""
+    from logistics.models import PasswordResetCode
+    from django.core.mail import send_mail
+    from django.conf import settings
+    
+    email = request.data.get('email')
+    
+    if not email:
+        return Response({
+            'error': 'Email es requerido'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Verificar que el email esté registrado
+    if not User.objects.filter(email=email).exists():
+        return Response({
+            'error': 'No existe una cuenta con este correo electrónico'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        # Generar código de 6 dígitos
+        code = PasswordResetCode.generate_code()
+        
+        # Crear registro con expiración de 15 minutos
+        expires_at = timezone.now() + timedelta(minutes=15)
+        PasswordResetCode.objects.create(
+            email=email,
+            code=code,
+            expires_at=expires_at
+        )
+        
+        # Enviar email
+        subject = 'Código de Recuperación de Contraseña - TecnoRoute'
+        message = f'''
+Hola,
+
+Has solicitado recuperar tu contraseña en TecnoRoute.
+
+Tu código de verificación es: {code}
+
+Este código es válido por 15 minutos.
+
+Si no solicitaste este código, puedes ignorar este mensaje.
+
+Saludos,
+Equipo TecnoRoute
+        '''
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        
+        return Response({
+            'success': True,
+            'message': 'Código de recuperación enviado a tu correo',
+            'debug_code': code  # Solo para desarrollo - ELIMINAR EN PRODUCCIÓN
+        })
+    except Exception as e:
+        return Response({
+            'error': f'Error enviando código: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def verify_reset_code(request):
+    """Verificar código de recuperación"""
+    from logistics.models import PasswordResetCode
+    
+    email = request.data.get('email')
+    code = request.data.get('code')
+    
+    if not email or not code:
+        return Response({
+            'error': 'Email y código son requeridos'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Buscar código válido
+        reset_code = PasswordResetCode.objects.filter(
+            email=email,
+            code=code,
+            used=False
+        ).order_by('-created_at').first()
+        
+        if not reset_code:
+            return Response({
+                'error': 'Código inválido'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not reset_code.is_valid():
+            return Response({
+                'error': 'Código expirado. Solicita uno nuevo'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            'success': True,
+            'message': 'Código verificado correctamente'
+        })
+    except Exception as e:
+        return Response({
+            'error': f'Error verificando código: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def reset_password(request):
+    """Restablecer contraseña con código válido"""
+    from logistics.models import PasswordResetCode
+    
+    email = request.data.get('email')
+    code = request.data.get('code')
+    new_password = request.data.get('new_password')
+    
+    if not email or not code or not new_password:
+        return Response({
+            'error': 'Email, código y nueva contraseña son requeridos'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Validar longitud de contraseña
+    if len(new_password) < 8:
+        return Response({
+            'error': 'La contraseña debe tener al menos 8 caracteres'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Buscar código válido
+        reset_code = PasswordResetCode.objects.filter(
+            email=email,
+            code=code,
+            used=False
+        ).order_by('-created_at').first()
+        
+        if not reset_code:
+            return Response({
+                'error': 'Código inválido'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not reset_code.is_valid():
+            return Response({
+                'error': 'Código expirado. Solicita uno nuevo'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Buscar usuario
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({
+                'error': 'Usuario no encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Cambiar contraseña
+        user.set_password(new_password)
+        user.save()
+        
+        # Marcar código como usado
+        reset_code.used = True
+        reset_code.save()
+        
+        return Response({
+            'success': True,
+            'message': 'Contraseña restablecida exitosamente'
+        })
+    except Exception as e:
+        return Response({
+            'error': f'Error restableciendo contraseña: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

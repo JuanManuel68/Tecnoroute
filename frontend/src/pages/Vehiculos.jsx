@@ -62,13 +62,13 @@ const Vehiculos = () => {
     año: '',
     tipo: 'camion',
     capacidad_kg: '',
+    capacidad_motor: '',
     color: '',
     combustible: 'gasolina',
     estado: 'disponible',
-    conductor_asignado: '',
-    numero_motor: '',
-    numero_chasis: ''
+    conductor_asignado: ''
   });
+  const [placaAutoComplete, setPlacaAutoComplete] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -84,9 +84,6 @@ const Vehiculos = () => {
         vehiculosAPI.getAll(),
         conductoresAPI.getAll()
       ]);
-      
-      console.log('Vehículos cargados:', vehiculosResponse.data);
-      console.log('Conductores cargados:', conductoresResponse.data);
       
       setVehiculos(vehiculosResponse.data || []);
       setConductores(conductoresResponse.data || []);
@@ -107,8 +104,7 @@ const Vehiculos = () => {
           combustible: 'gasolina',
           estado: 'disponible',
           conductor_asignado: null,
-          numero_motor: 'FM123456',
-          numero_chasis: 'CH789012',
+          capacidad_motor: 2000,
           fecha_registro: '2023-01-15'
         },
         {
@@ -123,13 +119,56 @@ const Vehiculos = () => {
           combustible: 'diesel',
           estado: 'en_uso',
           conductor_asignado: { id: 1, nombre: 'Carlos Rodríguez' },
-          numero_motor: 'CH654321',
-          numero_chasis: 'NK345678',
+          capacidad_motor: 2400,
           fecha_registro: '2023-03-10'
         }
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePlacaChange = async (placa) => {
+    const placaUpper = placa.toUpperCase();
+    setFormData({...formData, placa: placaUpper});
+    
+    if (placaUpper.length >= 6) {
+      try {
+        // Buscar conductor con esta placa temporal
+        const conductor = conductores.find(c => 
+          c.placa_temporal && c.placa_temporal.toUpperCase() === placaUpper
+        );
+        
+        if (conductor) {
+          setPlacaAutoComplete({
+            found: true,
+            conductor: `${conductor.nombres} ${conductor.apellidos}`
+          });
+          
+          // Autocompletar campos desde datos temporales del conductor
+          setFormData(prev => ({
+            ...prev,
+            placa: placaUpper,
+            marca: conductor.marca_vehiculo_temporal || prev.marca,
+            modelo: conductor.modelo_vehiculo_temporal || prev.modelo,
+            año: conductor.año_vehiculo_temporal || prev.año,
+            tipo: conductor.tipo_vehiculo_temporal || prev.tipo,
+            capacidad_kg: conductor.capacidad_kg_temporal || prev.capacidad_kg,
+            capacidad_motor: conductor.capacidad_motor_temporal || prev.capacidad_motor,
+            color: conductor.color_vehiculo_temporal || prev.color,
+            combustible: conductor.combustible_temporal || prev.combustible,
+            conductor_asignado: conductor.id
+          }));
+          
+          setFormErrors({});
+        } else {
+          setPlacaAutoComplete({ found: false });
+        }
+      } catch (error) {
+        console.error('Error buscando conductor:', error);
+      }
+    } else {
+      setPlacaAutoComplete(null);
     }
   };
 
@@ -175,12 +214,11 @@ const Vehiculos = () => {
       año: '',
       tipo: 'camion',
       capacidad_kg: '',
+      capacidad_motor: '',
       color: '',
       combustible: 'gasolina',
       estado: 'disponible',
-      conductor_asignado: '',
-      numero_motor: '',
-      numero_chasis: ''
+      conductor_asignado: ''
     });
     setOpenDialog(true);
   };
@@ -197,12 +235,11 @@ const Vehiculos = () => {
       año: vehiculo.año,
       tipo: vehiculo.tipo,
       capacidad_kg: vehiculo.capacidad_kg,
+      capacidad_motor: vehiculo.capacidad_motor || '',
       color: vehiculo.color,
       combustible: vehiculo.combustible,
       estado: vehiculo.estado,
-      conductor_asignado: vehiculo.conductor_asignado?.id || '',
-      numero_motor: vehiculo.numero_motor,
-      numero_chasis: vehiculo.numero_chasis
+      conductor_asignado: vehiculo.conductor_asignado?.id || ''
     });
     setOpenDialog(true);
   };
@@ -229,8 +266,7 @@ const Vehiculos = () => {
         año: 'Año',
         capacidad_kg: 'Capacidad de carga',
         color: 'Color',
-        numero_motor: 'Número de motor',
-        numero_chasis: 'Número de chasis'
+        capacidad_motor: 'Capacidad del motor'
       };
       return `${labels[name] || name} es requerido`;
     }
@@ -291,14 +327,6 @@ const Vehiculos = () => {
     
     if (!formData.color || formData.color.trim() === '') {
       errors.color = 'El color es requerido';
-    }
-    
-    if (!formData.numero_motor || formData.numero_motor.trim() === '') {
-      errors.numero_motor = 'El número de motor es requerido';
-    }
-    
-    if (!formData.numero_chasis || formData.numero_chasis.trim() === '') {
-      errors.numero_chasis = 'El número de chasis es requerido';
     }
     
     return errors;
@@ -700,12 +728,11 @@ const Vehiculos = () => {
               <Grid item xs={12} sm={6}>
                 <Typography variant="body2"><strong>Combustible:</strong> {selectedVehiculo.combustible}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2"><strong>Motor:</strong> {selectedVehiculo.numero_motor}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2"><strong>Chasis:</strong> {selectedVehiculo.numero_chasis}</Typography>
-              </Grid>
+              {selectedVehiculo.capacidad_motor && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2"><strong>Capacidad Motor:</strong> {selectedVehiculo.capacidad_motor} CC</Typography>
+                </Grid>
+              )}
               <Grid item xs={12} sm={6}>
                 <Typography variant="body2">
                   <strong>Estado:</strong> 
@@ -731,19 +758,26 @@ const Vehiculos = () => {
                   fullWidth
                   label="Placa"
                   value={formData.placa}
-                  onChange={(e) => {
-                    setFormData({ ...formData, placa: e.target.value.toUpperCase() });
-                    if (formErrors.placa) {
-                      setFormErrors(prev => ({ ...prev, placa: '' }));
-                    }
-                  }}
+                  onChange={(e) => handlePlacaChange(e.target.value)}
                   onBlur={() => handleBlur('placa')}
                   required
                   placeholder="ABC-123"
                   error={!!formErrors.placa}
-                  helperText={formErrors.placa}
+                  helperText={
+                    formErrors.placa || 
+                    (placaAutoComplete?.found && `✅ Conductor: ${placaAutoComplete.conductor} - Datos autocompletados`) ||
+                    (placaAutoComplete?.found === false && '⚠️ No se encontró conductor con esta placa')
+                  }
+                  inputProps={{ style: { textTransform: 'uppercase' } }}
                 />
               </Grid>
+              {placaAutoComplete?.found && (
+                <Grid item xs={12}>
+                  <Alert severity="success">
+                    Los datos del vehículo se han completado automáticamente desde el registro del conductor <strong>{placaAutoComplete.conductor}</strong>
+                  </Alert>
+                </Grid>
+              )}
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -866,35 +900,18 @@ const Vehiculos = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Número de Motor"
-                  value={formData.numero_motor}
+                  label="Capacidad Motor (CC)"
+                  type="number"
+                  value={formData.capacidad_motor}
                   onChange={(e) => {
-                    setFormData({ ...formData, numero_motor: e.target.value });
-                    if (formErrors.numero_motor) {
-                      setFormErrors(prev => ({ ...prev, numero_motor: '' }));
+                    setFormData({ ...formData, capacidad_motor: e.target.value });
+                    if (formErrors.capacidad_motor) {
+                      setFormErrors(prev => ({ ...prev, capacidad_motor: '' }));
                     }
                   }}
-                  onBlur={() => handleBlur('numero_motor')}
-                  required
-                  error={!!formErrors.numero_motor}
-                  helperText={formErrors.numero_motor}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Número de Chasis"
-                  value={formData.numero_chasis}
-                  onChange={(e) => {
-                    setFormData({ ...formData, numero_chasis: e.target.value });
-                    if (formErrors.numero_chasis) {
-                      setFormErrors(prev => ({ ...prev, numero_chasis: '' }));
-                    }
-                  }}
-                  onBlur={() => handleBlur('numero_chasis')}
-                  required
-                  error={!!formErrors.numero_chasis}
-                  helperText={formErrors.numero_chasis}
+                  inputProps={{ min: 0 }}
+                  error={!!formErrors.capacidad_motor}
+                  helperText={formErrors.capacidad_motor || 'Opcional - Se completa automáticamente si el conductor lo registró'}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>

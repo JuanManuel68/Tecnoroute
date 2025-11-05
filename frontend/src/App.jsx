@@ -134,6 +134,7 @@ const AppContent = () => {
           <Route path="/profile" element={<UserRoute><ModernProfile /></UserRoute>} />
           <Route path="/checkout" element={<UserRoute><ModernCheckout /></UserRoute>} />
           <Route path="/orders" element={<UserRoute><ModernOrders /></UserRoute>} />
+          <Route path="/seguimiento" element={<UserRoute><SeguimientoEnvio /></UserRoute>} />
           <Route path="/debug-orders" element={<UserRoute><OrdersDebug /></UserRoute>} />
 
           {/* Conductor */}
@@ -147,7 +148,6 @@ const AppContent = () => {
           <Route path="/admin/conductores" element={<AdminRoute><Conductores /></AdminRoute>} />
           <Route path="/admin/vehiculos" element={<AdminRoute><Vehiculos /></AdminRoute>} />
           <Route path="/admin/envios" element={<AdminRoute><Envios /></AdminRoute>} />
-          <Route path="/admin/seguimiento" element={<AdminRoute><SeguimientoEnvio /></AdminRoute>} />
           <Route path="/admin/pedidos" element={<AdminRoute><PedidosAdmin /></AdminRoute>} />
 
           {/* Fallback */}

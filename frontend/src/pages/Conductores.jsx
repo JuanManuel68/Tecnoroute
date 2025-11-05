@@ -39,7 +39,8 @@ import {
   Phone as PhoneIcon,
   Email as EmailIcon,
   Search as SearchIcon,
-  FilterList as FilterListIcon
+  FilterList as FilterListIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { conductoresAPI } from '../services/apiService';
 
@@ -50,11 +51,23 @@ const Conductores = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedConductor, setSelectedConductor] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [successDialog, setSuccessDialog] = useState({ open: false, password: '' });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, conductor: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('todos');
   const [formErrors, setFormErrors] = useState({});
+  const cities = [
+    'Bogotá',
+    'Soacha',
+    'Chía',
+    'Zipaquirá',
+    'Cota',
+    'Funza',
+    'Mosquera',
+    'Madrid',
+    'Facatativá',
+    'Cajicá'
+  ];
+
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -62,8 +75,7 @@ const Conductores = () => {
     licencia: '',
     telefono: '',
     email: '',
-    direccion: '',
-    estado: 'disponible'
+    ciudad: ''
   });
 
   useEffect(() => {
@@ -118,8 +130,7 @@ const Conductores = () => {
       licencia: '',
       telefono: '',
       email: '',
-      direccion: '',
-      estado: 'disponible'
+      ciudad: ''
     });
     setOpenDialog(true);
   };
@@ -136,8 +147,7 @@ const Conductores = () => {
       licencia: conductor.licencia,
       telefono: conductor.telefono,
       email: conductor.email,
-      direccion: conductor.direccion,
-      estado: conductor.estado
+      ciudad: conductor.ciudad || conductor.direccion || ''
     });
     setOpenDialog(true);
   };
@@ -164,22 +174,33 @@ const Conductores = () => {
         licencia: 'Licencia',
         telefono: 'Teléfono',
         email: 'Email',
-        direccion: 'Dirección'
+        ciudad: 'Ciudad de residencia'
       };
       return `${labels[name] || name} es requerido`;
     }
 
     switch (name) {
       case 'nombres':
-        if (value.length < 2) return 'Los nombres deben tener al menos 2 caracteres';
+        if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) {
+          return 'Los nombres solo pueden contener letras';
+        } else if (value.length < 2) {
+          return 'Los nombres deben tener al menos 2 caracteres';
+        }
         break;
       case 'apellidos':
-        if (value.length < 2) return 'Los apellidos deben tener al menos 2 caracteres';
+        if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) {
+          return 'Los apellidos solo pueden contener letras';
+        } else if (value.length < 2) {
+          return 'Los apellidos deben tener al menos 2 caracteres';
+        }
         break;
       case 'cedula':
         if (value.length < 6) return 'La cédula debe tener al menos 6 caracteres';
         break;
       case 'telefono':
+        if (!/^[0-9+\s()-]+$/.test(value)) {
+          return 'El teléfono solo puede contener números y los caracteres + ( ) -';
+        }
         const phoneDigits = value.replace(/\D/g, '');
         if (phoneDigits.length < 7) return 'El teléfono debe tener al menos 7 dígitos';
         break;
@@ -195,8 +216,8 @@ const Conductores = () => {
           }
         }
         break;
-      case 'direccion':
-        if (value.length < 5) return 'La dirección debe tener al menos 5 caracteres';
+      case 'ciudad':
+        // No validation needed for ciudad since it's a select
         break;
       default:
         break;
@@ -248,10 +269,8 @@ const Conductores = () => {
       }
     }
     
-    if (!formData.direccion || formData.direccion.trim() === '') {
-      errors.direccion = 'La dirección es requerida';
-    } else if (formData.direccion.length < 5) {
-      errors.direccion = 'La dirección debe tener al menos 5 caracteres';
+    if (!formData.ciudad || formData.ciudad.trim() === '') {
+      errors.ciudad = 'La ciudad de residencia es requerida';
     }
     
     return errors;
@@ -275,20 +294,17 @@ const Conductores = () => {
         // Create conductor - backend will generate password automatically
         const conductorData = {
           ...formData,
+          direccion: formData.ciudad, // Backend usa 'direccion' para guardar la ciudad
+          estado: 'disponible', // Siempre disponible al crear
           role: 'conductor'
         };
         
-        const response = await conductoresAPI.create(conductorData);
+        await conductoresAPI.create(conductorData);
         
-        // Show modal with temporary password
-        if (response.data.password_temporal) {
-          setSuccessDialog({
-            open: true,
-            password: response.data.password_temporal
-          });
-        }
-        
+        // Close dialog immediately
         setOpenDialog(false);
+        
+        // Reload conductors list
         loadConductores();
       } else if (selectedConductor) {
         // For editing
@@ -323,7 +339,7 @@ const Conductores = () => {
                 'apellidos': 'Apellidos',
                 'telefono': 'Teléfono',
                 'licencia': 'Licencia',
-                'direccion': 'Dirección'
+                'ciudad': 'Ciudad de residencia'
               };
               
               errorMessage += `• ${fieldNames[field] || field}: ${errorMsg}\n`;
@@ -357,17 +373,10 @@ const Conductores = () => {
     if (!deleteDialog.conductor) return;
     
     try {
-      const response = await conductoresAPI.delete(deleteDialog.conductor.id);
+      await conductoresAPI.delete(deleteDialog.conductor.id);
       
       // Close dialog
       setDeleteDialog({ open: false, conductor: null });
-      
-      // Show success message
-      setSuccessDialog({
-        open: true,
-        password: '',
-        successMessage: 'Conductor y vehículo asociado desactivados exitosamente'
-      });
       
       // Reload list
       loadConductores();
@@ -430,14 +439,24 @@ const Conductores = () => {
             Gestión de Conductores ({conductores.length})
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreate}
-          size="large"
-        >
-          Nuevo Conductor
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={loadConductores}
+            size="large"
+          >
+            Actualizar
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreate}
+            size="large"
+          >
+            Nuevo Conductor
+          </Button>
+        </Box>
       </Box>
 
       {error && !openDialog && (
@@ -843,38 +862,28 @@ const Conductores = () => {
                   helperText={formErrors.email}
                 />
               </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Dirección"
-                  multiline
-                  rows={2}
-                  value={formData.direccion}
-                  onChange={(e) => {
-                    setFormData({ ...formData, direccion: e.target.value });
-                    if (formErrors.direccion) {
-                      setFormErrors(prev => ({ ...prev, direccion: '' }));
-                    }
-                  }}
-                  onBlur={() => handleBlur('direccion')}
-                  required
-                  error={!!formErrors.direccion}
-                  helperText={formErrors.direccion}
-                />
-              </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required>
-                  <InputLabel>Estado</InputLabel>
+                <FormControl fullWidth required error={!!formErrors.ciudad}>
+                  <InputLabel>Ciudad de Residencia</InputLabel>
                   <Select
-                    value={formData.estado}
-                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                    label="Estado"
+                    value={formData.ciudad}
+                    onChange={(e) => {
+                      setFormData({ ...formData, ciudad: e.target.value });
+                      if (formErrors.ciudad) {
+                        setFormErrors(prev => ({ ...prev, ciudad: '' }));
+                      }
+                    }}
+                    label="Ciudad de Residencia"
                   >
-                    <MenuItem value="disponible">Disponible</MenuItem>
-                    <MenuItem value="en_ruta">En Ruta</MenuItem>
-                    <MenuItem value="descanso">En Descanso</MenuItem>
-                    <MenuItem value="inactivo">Inactivo</MenuItem>
+                    {cities.map((city) => (
+                      <MenuItem key={city} value={city}>{city}</MenuItem>
+                    ))}
                   </Select>
+                  {formErrors.ciudad && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                      {formErrors.ciudad}
+                    </Typography>
+                  )}
                 </FormControl>
               </Grid>
             </Grid>
@@ -956,60 +965,6 @@ const Conductores = () => {
             startIcon={<DeleteIcon />}
           >
             Sí, Desactivar
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
-      {/* Success Dialog with Password */}
-      <Dialog open={successDialog.open} onClose={() => setSuccessDialog({ open: false, password: '' })} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ bgcolor: 'success.main', color: 'white', textAlign: 'center' }}>
-          <Typography variant="h5" component="div" sx={{ fontWeight: 'bold' }}>
-            {successDialog.password ? '✅ ¡Conductor Creado Exitosamente!' : '✅ ¡Operación Exitosa!'}
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ mt: 3 }}>
-          <Box sx={{ textAlign: 'center', py: 2 }}>
-            {successDialog.successMessage ? (
-              <Typography variant="h6" sx={{ mb: 3, color: 'success.dark' }}>
-                {successDialog.successMessage}
-              </Typography>
-            ) : (
-              <>
-                <Typography variant="body1" sx={{ mb: 3 }}>
-                  El conductor ha sido registrado correctamente en el sistema.
-                </Typography>
-                
-                <Box sx={{ bgcolor: 'warning.light', p: 3, borderRadius: 2, mb: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'warning.dark' }}>
-                    🔑 CONTRASEÑA TEMPORAL
-                  </Typography>
-                  <Box sx={{ bgcolor: 'white', p: 2, borderRadius: 1, mb: 2 }}>
-                    <Typography variant="h4" sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: 'error.main', letterSpacing: 2 }}>
-                      {successDialog.password}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    ⚠️ Por favor, comuníquela al conductor de forma segura
-                  </Typography>
-                </Box>
-                
-                <Alert severity="info" sx={{ textAlign: 'left' }}>
-                  <Typography variant="body2">
-                    <strong>Importante:</strong> El conductor debe usar esta contraseña en su primer inicio de sesión y completar el registro de su vehículo.
-                  </Typography>
-                </Alert>
-              </>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, justifyContent: 'center' }}>
-          <Button 
-            onClick={() => setSuccessDialog({ open: false, password: '' })} 
-            variant="contained" 
-            size="large"
-            sx={{ px: 4 }}
-          >
-            Entendido
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -26,25 +27,121 @@ import {
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon
 } from '@mui/icons-material';
-import { enviosAPI } from '../services/apiService';
+import { enviosAPI, pedidosAPI } from '../services/apiService';
 
 const SeguimientoEnvio = () => {
+  const [searchParams] = useSearchParams();
   const [numeroGuia, setNumeroGuia] = useState('');
   const [envio, setEnvio] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [seguimientos, setSeguimientos] = useState([]);
+  
+  // Cargar automáticamente si hay código en la URL
+  useEffect(() => {
+    const codigo = searchParams.get('codigo');
+    if (codigo) {
+      setNumeroGuia(codigo);
+      // Buscar automáticamente después de un breve delay
+      setTimeout(() => {
+        buscarEnvioConCodigo(codigo);
+      }, 100);
+    }
+  }, [searchParams]);
 
+  const buscarEnvioConCodigo = async (codigo) => {
+    setNumeroGuia(codigo);
+    await buscarEnvioInterno(codigo);
+  };
+  
   const buscarEnvio = async () => {
     if (!numeroGuia.trim()) {
-      setError('Por favor, ingresa un número de guía');
+      setError('Por favor, ingresa un código de pedido o número de guía');
       return;
     }
+    await buscarEnvioInterno(numeroGuia);
+  };
+  
+  const buscarEnvioInterno = async (codigoBusqueda) => {
 
     try {
       setLoading(true);
       setError(null);
-      const response = await enviosAPI.buscarPorGuia(numeroGuia);
+      
+      // Intentar buscar por código de pedido primero
+      try {
+        const pedidosResponse = await pedidosAPI.getAll();
+        const pedidos = pedidosResponse.data || [];
+        const pedido = pedidos.find(p => p.numero_pedido === codigoBusqueda);
+        
+        if (pedido) {
+          // Convertir pedido a formato de envío
+          setEnvio({
+            numero_guia: pedido.numero_pedido,
+            estado: pedido.estado === 'en_curso' ? 'en_transito' : pedido.estado,
+            direccion_entrega: pedido.direccion_envio,
+            telefono_entrega: pedido.telefono_contacto,
+            peso_kg: pedido.items?.reduce((sum, item) => sum + (item.cantidad * 5), 0) || 0,
+            valor_declarado: pedido.total,
+            conductor: pedido.conductor_data || pedido.conductor,
+            fecha_creacion: pedido.fecha_creacion,
+            items: pedido.items
+          });
+          
+          // Crear seguimientos basados en el pedido
+          const seguimientosData = [];
+          if (pedido.fecha_creacion) {
+            seguimientosData.push({
+              id: 1,
+              estado: 'Pedido creado',
+              descripcion: 'El pedido ha sido registrado en el sistema',
+              ubicacion: 'Tienda TecnoRoute',
+              fecha_hora: pedido.fecha_creacion,
+              usuario: 'Sistema'
+            });
+          }
+          if (pedido.estado === 'confirmado' || pedido.estado === 'en_curso' || pedido.estado === 'entregado') {
+            seguimientosData.push({
+              id: 2,
+              estado: 'Pedido confirmado',
+              descripcion: 'El pedido ha sido confirmado y asignado a un conductor',
+              ubicacion: 'Centro de distribución',
+              fecha_hora: pedido.fecha_asignacion || pedido.fecha_creacion,
+              usuario: 'Sistema'
+            });
+          }
+          if (pedido.estado === 'en_curso' || pedido.estado === 'entregado') {
+            const conductorNombre = pedido.conductor_data?.nombre || pedido.conductor?.nombre || 'Conductor asignado';
+            const conductorTelefono = pedido.conductor_data?.telefono || pedido.conductor?.telefono || '';
+            seguimientosData.push({
+              id: 3,
+              estado: 'En ruta',
+              descripcion: `${conductorNombre} está en camino a la dirección de entrega${conductorTelefono ? ` - Tel: ${conductorTelefono}` : ''}`,
+              ubicacion: `En camino hacia ${pedido.direccion_envio}`,
+              fecha_hora: new Date().toISOString(),
+              usuario: conductorNombre
+            });
+          }
+          if (pedido.estado === 'entregado') {
+            seguimientosData.push({
+              id: 4,
+              estado: 'Entregado',
+              descripcion: 'El pedido ha sido entregado exitosamente',
+              ubicacion: pedido.direccion_envio,
+              fecha_hora: new Date().toISOString(),
+              usuario: pedido.conductor_data?.nombre || 'Conductor'
+            });
+          }
+          setSeguimientos(seguimientosData);
+          setLoading(false);
+          return;
+        }
+      } catch (pedidoError) {
+        console.log('No es un código de pedido, intentando como número de guía');
+      }
+      
+      // Si no es un pedido, buscar como envío
+      const response = await enviosAPI.buscarPorGuia(codigoBusqueda);
       setEnvio(response.data);
       
       // Obtener seguimientos del envío
@@ -52,7 +149,7 @@ const SeguimientoEnvio = () => {
       setSeguimientos(seguimientoResponse.data || []);
     } catch (error) {
       console.error('Error buscando envío:', error);
-      setError('No se encontró el envío con el número de guía proporcionado');
+      setError('No se encontró el pedido o envío con el código proporcionado');
       
       // Datos de ejemplo para demostración
       if (numeroGuia === 'DEMO123') {
@@ -151,10 +248,10 @@ const SeguimientoEnvio = () => {
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
           <TextField
             fullWidth
-            label="Número de Guía"
+            label="Código de Pedido o Número de Guía"
             value={numeroGuia}
-            onChange={(e) => setNumeroGuia(e.target.value)}
-            placeholder="Ej: DEMO123"
+            onChange={(e) => setNumeroGuia(e.target.value.toUpperCase())}
+            placeholder="Ej: PED-12345678 o ENV-ABCD1234"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -180,7 +277,7 @@ const SeguimientoEnvio = () => {
         
         <Box sx={{ mt: 2 }}>
           <Typography variant="caption" color="text.secondary">
-            Prueba con el número de guía: <strong>DEMO123</strong> para ver un ejemplo
+            Ingresa el código de tu pedido (PED-XXXXXXXX) o el número de guía del envío (ENV-XXXXXXXX)
           </Typography>
         </Box>
       </Paper>

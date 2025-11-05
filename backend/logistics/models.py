@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
+import random
+import string
 
 
 class Admin(models.Model):
@@ -54,6 +57,7 @@ class Conductor(models.Model):
     año_vehiculo_temporal = models.IntegerField(blank=True, null=True, verbose_name="Año Temporal")
     tipo_vehiculo_temporal = models.CharField(max_length=20, blank=True, null=True, verbose_name="Tipo Temporal")
     capacidad_kg_temporal = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, verbose_name="Capacidad Temporal")
+    capacidad_motor_temporal = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, verbose_name="Capacidad Motor Temporal")
     color_vehiculo_temporal = models.CharField(max_length=50, blank=True, null=True, verbose_name="Color Temporal")
     combustible_temporal = models.CharField(max_length=20, blank=True, null=True, verbose_name="Combustible Temporal")
     numero_motor_temporal = models.CharField(max_length=50, blank=True, null=True, verbose_name="Motor Temporal")
@@ -100,10 +104,9 @@ class Vehiculo(models.Model):
     año = models.IntegerField(verbose_name="Año")
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, verbose_name="Tipo")
     capacidad_kg = models.DecimalField(max_digits=8, decimal_places=2, verbose_name="Capacidad de Peso (kg)")
+    capacidad_motor = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, verbose_name="Capacidad del Motor (CC)")
     color = models.CharField(max_length=50, default='Blanco', verbose_name="Color")
     combustible = models.CharField(max_length=20, choices=COMBUSTIBLE_CHOICES, default='gasolina', verbose_name="Combustible")
-    numero_motor = models.CharField(max_length=50, blank=True, default='', verbose_name="Número de Motor")
-    numero_chasis = models.CharField(max_length=50, blank=True, default='', verbose_name="Número de Chasis")
     conductor_asignado = models.OneToOneField(Conductor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Conductor Asignado")
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='disponible', verbose_name="Estado")
     kilometraje = models.IntegerField(default=0, verbose_name="Kilometraje")
@@ -208,3 +211,29 @@ class SeguimientoEnvio(models.Model):
 # ELIMINADO: PedidoTransporte se unificó con Pedido en user_management
 # Los pedidos de productos electrodomésticos usan el modelo Pedido
 # Los envíos de logística usan el modelo Envio
+
+
+class PasswordResetCode(models.Model):
+    """Modelo para almacenar códigos de recuperación de contraseña"""
+    email = models.EmailField(verbose_name="Correo Electrónico")
+    code = models.CharField(max_length=6, verbose_name="Código")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    expires_at = models.DateTimeField(verbose_name="Fecha de Expiración")
+    used = models.BooleanField(default=False, verbose_name="Usado")
+    
+    class Meta:
+        verbose_name = "Código de Recuperación"
+        verbose_name_plural = "Códigos de Recuperación"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.email} - {self.code}"
+    
+    def is_valid(self):
+        """Check if code is still valid (not expired and not used)"""
+        return not self.used and timezone.now() < self.expires_at
+    
+    @classmethod
+    def generate_code(cls):
+        """Generate a random 6-digit code"""
+        return ''.join(random.choices(string.digits, k=6))

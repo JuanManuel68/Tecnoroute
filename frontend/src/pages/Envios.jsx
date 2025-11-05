@@ -37,7 +37,7 @@ import {
   AttachMoney as AttachMoneyIcon,
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
-import { enviosAPI, clientesAPI, vehiculosAPI, conductoresAPI } from '../services/apiService';
+import { enviosAPI, clientesAPI, vehiculosAPI, conductoresAPI, pedidosAPI } from '../services/apiService';
 
 const Envios = () => {
   const [envios, setEnvios] = useState([]);
@@ -83,19 +83,41 @@ const Envios = () => {
       setLoading(true);
       setError(null);
       
-      const [enviosRes, clientesRes, vehiculosRes, conductoresRes] = await Promise.all([
+      const [enviosRes, pedidosRes, clientesRes, vehiculosRes, conductoresRes] = await Promise.all([
         enviosAPI.getAll().catch(() => ({ data: [] })),
+        pedidosAPI.getAll().catch(() => ({ data: [] })),
         clientesAPI.getAll().catch(() => ({ data: [] })),
         vehiculosAPI.getAll().catch(() => ({ data: [] })),
         conductoresAPI.getAll().catch(() => ({ data: [] }))
       ]);
       
-      // Filtrar solo envíos/pedidos que estén en estado "enviado" o "en_transito"
-      const enviosFiltrados = (enviosRes.data || []).filter(envio => 
-        envio.estado === 'enviado' || envio.estado === 'en_transito'
-      );
+      // Convertir pedidos a formato de envío para mostrar seguimiento
+      const pedidosConSeguimiento = (pedidosRes.data || [])
+        .filter(pedido => pedido.estado === 'confirmado' || pedido.estado === 'en_curso' || pedido.estado === 'enviado')
+        .map(pedido => ({
+          id: pedido.id,
+          numero_guia: pedido.numero_pedido,
+          cliente: pedido.usuario_nombre ? { nombre: pedido.usuario_nombre } : null,
+          conductor: pedido.conductor_data || pedido.conductor,
+          peso_kg: pedido.items?.reduce((sum, item) => sum + (item.cantidad * 5), 0) || 0,
+          costo_envio: pedido.total,
+          estado: pedido.estado === 'en_curso' ? 'en_transito' : pedido.estado,
+          prioridad: 'media',
+          direccion_entrega: pedido.direccion_envio,
+          telefono_entrega: pedido.telefono_contacto,
+          fecha_creacion: pedido.fecha_creacion,
+          tipo: 'pedido'
+        }));
       
-      setEnvios(enviosFiltrados);
+      // Combinar envíos reales con pedidos convertidos
+      const todosLosEnvios = [
+        ...(enviosRes.data || []).filter(envio => 
+          envio.estado === 'enviado' || envio.estado === 'en_transito'
+        ),
+        ...pedidosConSeguimiento
+      ];
+      
+      setEnvios(todosLosEnvios);
       setClientes(clientesRes.data || []);
       setVehiculos(vehiculosRes.data || []);
       setConductores(conductoresRes.data || []);
@@ -110,7 +132,9 @@ const Envios = () => {
   const getEstadoColor = (estado) => {
     switch (estado) {
       case 'pendiente': return 'warning';
-      case 'en_transito': return 'info';
+      case 'confirmado': return 'info';
+      case 'en_transito': return 'primary';
+      case 'en_curso': return 'primary';
       case 'entregado': return 'success';
       case 'cancelado': return 'error';
       case 'devuelto': return 'default';
