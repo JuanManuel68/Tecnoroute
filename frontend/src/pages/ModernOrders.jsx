@@ -800,7 +800,15 @@ const ModernOrders = () => {
       
       {/* Toast Container */}
       <ToastContainer />
+      
+            {/* Footer */}
+      <footer className="bg-gray-900 text-gray-300 py-6 mt-8 text-center">
+        <p className="text-sm">
+          © {new Date().getFullYear()} <span className="font-semibold text-white">TuEmpresa</span>. Todos los derechos reservados.
+        </p>
+      </footer>
     </div>
+    
   );
 };
 

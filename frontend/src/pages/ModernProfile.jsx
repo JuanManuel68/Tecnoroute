@@ -22,7 +22,7 @@ const ModernProfile = () => {
   
   // Ciudades disponibles
   const cities = [
-    'Bogotá',
+  'Bogotá',
     'Soacha',
     'Chía',
     'Zipaquirá',
@@ -31,7 +31,35 @@ const ModernProfile = () => {
     'Mosquera',
     'Madrid',
     'Facatativá',
-    'Cajicá'
+    'Cajicá',
+    
+    // Principales ciudades
+    'Medellín',
+    'Cali',
+    'Barranquilla',
+    'Cartagena',
+    'Bucaramanga',
+    'Pereira',
+    'Manizales',
+    'Armenia',
+    'Cúcuta',
+    'Ibagué',
+    'Neiva',
+    'Villavicencio',
+    'Tunja',
+    'Santa Marta',
+    'Montería',
+    'Sincelejo',
+    'Popayán',
+    'Pasto',
+    'Valledupar',
+    'Floridablanca',
+    'Palmira',
+    'Yopal',
+    'Riohacha',
+    'Quibdó',
+    'Arauca',
+    'Leticia'
   ];
   
   const [formData, setFormData] = useState({
@@ -526,7 +554,8 @@ const ModernProfile = () => {
                 </div>
 
                 <form className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6">
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Nombre completo <span className="text-red-500">*</span>
@@ -1083,7 +1112,14 @@ const ModernProfile = () => {
           </div>
         </div>
       )}
+            {/* Footer */}
+      <footer className="bg-gray-900 text-gray-300 py-6 mt-8 text-center">
+        <p className="text-sm">
+          © {new Date().getFullYear()} <span className="font-semibold text-white">TuEmpresa</span>. Todos los derechos reservados.
+        </p>
+      </footer>
     </div>
+    
   );
 };
 

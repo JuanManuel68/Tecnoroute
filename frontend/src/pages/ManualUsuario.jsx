@@ -1,5 +1,10 @@
 import React from 'react';
 
+// Importar las imágenes desde src/manual/
+import registroBoton from '../manual/registro-boton.png';
+import formularioRegistro from '../manual/formulario-registro.png';
+import explorarPagina from '../manual/explorar-pagina.png';
+
 const ManualUsuario = () => {
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -143,9 +148,9 @@ const ManualUsuario = () => {
           <div className="manual-step">
             <h2>🪪 Paso 1: Accede a la página de registro</h2>
             <p>
-              Haz clic en el botón <strong>“Registrarse”</strong> en la parte superior derecha del sitio.
+              Haz clic en el botón <strong>“Registrarse”</strong> en la parte superior derecha del sitio o en el centro de la pagina de inicio.
             </p>
-            <img src="/manual/registro-boton.png" alt="Botón de registro" />
+            <img src={registroBoton} alt="Botón de registro" />
           </div>
 
           {/* Paso 2 */}
@@ -155,33 +160,29 @@ const ManualUsuario = () => {
               Llena el formulario con tu <strong>nombre, correo electrónico</strong> y una{' '}
               <strong>contraseña segura</strong>.
             </p>
-            <img src="/manual/formulario-registro.png" alt="Formulario de registro" />
+            <img src={formularioRegistro} alt="Formulario de registro" />
           </div>
 
           {/* Paso 3 */}
           <div className="manual-step">
-            <h2>📩 Paso 3: Confirma tu registro</h2>
+            <h2>📩 Paso 3: Redirecionamiento a la página</h2>
             <p>
-              Revisa tu correo y haz clic en el enlace de confirmación para activar tu cuenta.
-              Luego podrás iniciar sesión en TecnoRoute.
+              Apenas te hayas registrado, la página te enviará automáticamente a la página de productos para que puedas empezar a explorar.
             </p>
-            <img src="/manual/correo-confirmacion.png" alt="Correo de confirmación" />
-          </div>
-
-          {/* Paso 4 */}
-          <div className="manual-step">
-            <h2>🛒 Paso 4: Explora y compra productos</h2>
-            <p>
-              Una vez dentro, podrás navegar entre los productos, agregarlos al carrito y realizar tus
-              compras con facilidad.
-            </p>
-            <img src="/manual/pagina-productos.png" alt="Página de productos" />
+            <img src={explorarPagina} alt="Explorar página" />
           </div>
 
           {/* Final */}
           <div className="manual-end">
             <p>🚀 ¡Listo! Ya puedes disfrutar de todos los servicios de TecnoRoute.</p>
+
           </div>
+                    {/* Footer */}
+          <footer className="bg-gray-900 text-gray-300 py-6 mt-8 text-center">
+            <p className="text-sm">
+              © {new Date().getFullYear()} <span className="font-semibold text-white">TecnoRoute</span>. Todos los derechos reservados.
+            </p>
+          </footer>
         </div>
       </div>
     </>

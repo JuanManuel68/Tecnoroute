@@ -1038,6 +1038,13 @@ const Vehiculos = () => {
           </Button>
         </DialogActions>
       </Dialog>
+          {/* Footer */}
+    <footer className="py-6 bg-gray-900 text-white text-center mt-8">
+      <Typography variant="body2">
+        © {new Date().getFullYear()} <Box component="span" sx={{ fontWeight: 'bold' }}>TecnoRoute</Box>. Todos los derechos reservados.
+      </Typography>
+    </footer>
+    
     </Container>
   );
 };

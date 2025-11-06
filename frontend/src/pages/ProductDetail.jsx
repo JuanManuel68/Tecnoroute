@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
 import {
   StarIcon,
   HeartIcon,
@@ -9,8 +12,6 @@ import {
   ChevronLeftIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
 import { productosAPI, carritoAPI } from '../services/apiService';
 
 const ProductDetail = () => {
@@ -85,25 +86,40 @@ const ProductDetail = () => {
     try {
       setAddingToCart(true);
       
-      // Intentar agregar al carrito usando la API directamente
-      const response = await carritoAPI.addItem(product.id, quantity);
-      
-      // Refrescar el carrito en el contexto
-      if (refreshCart) {
-        await refreshCart();
+      // Validaciones
+      if (quantity < 1) {
+        toast.error('La cantidad debe ser al menos 1');
+        return;
       }
-      
-      // Mostrar mensaje de éxito
-      setShowSuccessMessage(true);
-      setTimeout(() => setShowSuccessMessage(false), 3000);
-      
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      alert('Error al agregar al carrito. Por favor intenta de nuevo.');
-    } finally {
-      setAddingToCart(false);
+
+    if (!product.stock || product.stock < quantity) {
+      toast.error('No hay suficiente stock disponible');
+      return;
     }
-  };
+
+    // Crear objeto del producto para el carrito con los nombres correctos
+    const cartItem = {
+      id: product.id,
+      nombre: product.nombre, // Cambiado de name a nombre
+      precio: product.precio, // Cambiado de price a precio
+      imagen: product.imagenes?.[0], // Cambiado de image a imagen
+      cantidad: quantity, // Cambiado de quantity a cantidad
+      stock: product.stock
+    };
+
+    // Agregar al carrito usando el contexto
+    await addToCart(cartItem);
+    
+    toast.success('Producto agregado al carrito exitosamente');
+    
+  } catch (error) {
+    console.error('Error al agregar al carrito:', error);
+    toast.error('Error al agregar el producto al carrito');
+  } finally {
+    setAddingToCart(false);
+  }
+};
+
 
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
@@ -306,18 +322,23 @@ const ProductDetail = () => {
               <div className="space-y-3">
                 <button
                   onClick={handleAddToCart}
-                  disabled={(!product.disponible && product.disponible !== undefined) || (product.stock !== undefined && product.stock === 0) || addingToCart}
-                  className={`w-full flex items-center justify-center space-x-2 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
-                    (product.disponible || product.disponible === undefined) && (product.stock === undefined || product.stock > 0)
-                      ? 'bg-primary-600 hover:bg-primary-700 text-white cursor-pointer'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  disabled={addingToCart || !product.stock}
+                  className={`w-full flex items-center justify-center space-x-2 py-3 px-6 rounded-lg font-semibold transition-all ${
+                    addingToCart || !product.stock 
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-primary-600 hover:bg-primary-700 text-white'
                   }`}
                 >
                   {addingToCart ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Agregando...</span>
-                    </>
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      </svg>
+                      Agregando...
+                    </span>
+                  ) : !product.stock ? (
+                    'Sin stock'
                   ) : (
                     <>
                       <ShoppingCartIcon className="w-5 h-5" />
@@ -325,7 +346,6 @@ const ProductDetail = () => {
                     </>
                   )}
                 </button>
-
                 {/* Guarantees */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                   <div className="flex items-center text-gray-600">
