@@ -65,7 +65,6 @@ const ModernNavbar = () => {
     { label: 'Conductores', path: '/admin/conductores', icon: UsersIcon, category: 'users' },
     { label: 'Vehículos', path: '/admin/vehiculos', icon: TruckIcon, category: 'logistics' },
     { label: 'Envíos', path: '/admin/envios', icon: ClipboardDocumentListIcon, category: 'logistics' },
-    { label: 'Seguimiento', path: '/admin/seguimiento', icon: CursorArrowRaysIcon, category: 'logistics' },
   ];
 
   const conductorMenuItems = [
