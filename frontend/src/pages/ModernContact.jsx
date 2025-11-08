@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ModernContact = () => {
   const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -43,23 +44,22 @@ const ModernContact = () => {
     }
   }, [user]);
 
+  // Manejo de cambios en los inputs
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError('');
-    if (fieldErrors[name]) {
-      setFieldErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
   };
 
+  // Validación de cada campo al perder el foco
   const handleBlur = (e) => {
     const { name, value } = e.target;
     const error = validateField(name, value);
-    if (error) {
-      setFieldErrors(prev => ({ ...prev, [name]: error }));
-    }
+    if (error) setFieldErrors(prev => ({ ...prev, [name]: error }));
   };
 
+  // Validación de campos
   const validateField = (name, value) => {
     if (!value || value.trim() === '') {
       const labels = {
@@ -80,16 +80,9 @@ const ModernContact = () => {
         if (value.length < 2) return 'Los apellidos deben tener al menos 2 caracteres';
         break;
       case 'email':
-        // Validar que tenga @
-        if (!value.includes('@')) {
-          return 'El correo debe contener el símbolo @';
-        } else {
-          // Validar formato completo
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(value)) {
-            return 'Formato de correo inválido (ejemplo: usuario@dominio.com)';
-          }
-        }
+        if (!value.includes('@')) return 'El correo debe contener el símbolo @';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Formato de correo inválido (ejemplo: usuario@dominio.com)';
         break;
       case 'asunto':
         if (value.length < 3) return 'El asunto debe tener al menos 3 caracteres';
@@ -100,10 +93,10 @@ const ModernContact = () => {
       default:
         break;
     }
-    
     return '';
   };
 
+  // Envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -112,9 +105,7 @@ const ModernContact = () => {
 
     // Validar todos los campos
     const errors = {};
-    const fieldsToValidate = ['nombres', 'apellidos', 'email', 'asunto', 'mensaje'];
-    
-    fieldsToValidate.forEach(field => {
+    ['nombres', 'apellidos', 'email', 'asunto', 'mensaje'].forEach(field => {
       const error = validateField(field, formData[field]);
       if (error) errors[field] = error;
     });
@@ -125,10 +116,9 @@ const ModernContact = () => {
       setIsSubmitting(false);
       return;
     }
-    
+
     try {
       const response = await contactAPI.sendMessage(formData);
-      
       if (response.data.success) {
         setIsSubmitted(true);
         setTimeout(() => {
@@ -146,55 +136,24 @@ const ModernContact = () => {
       }
     } catch (err) {
       console.error('Error al enviar mensaje:', err);
-      setError(
-        err.response?.data?.error || 
-        'Error al enviar el mensaje. Por favor, inténtalo de nuevo.'
-      );
+      setError(err.response?.data?.error || 'Error al enviar el mensaje. Por favor, inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Información de contacto
   const contactInfo = [
-    {
-      icon: PhoneIcon,
-      title: 'Teléfono',
-      content: '+1 (555) 123-4567',
-      description: 'Lunes a Viernes, 8:00 - 18:00',
-      color: 'bg-blue-500'
-    },
-    {
-      icon: MapPinIcon,
-      title: 'Dirección',
-      content: '123 Calle Principal',
-      description: 'Ciudad, País - CP 12345',
-      color: 'bg-purple-500'
-    },
-    {
-      icon: ClockIcon,
-      title: 'Horarios',
-      content: 'Lun - Vie: 8:00 - 18:00',
-      description: 'Sáb: 9:00 - 14:00',
-      color: 'bg-orange-500'
-    }
+    { icon: PhoneIcon, title: 'Teléfono', content: '+1 (555) 123-4567', description: 'Lunes a Viernes, 8:00 - 18:00', color: 'bg-blue-500' },
+    { icon: MapPinIcon, title: 'Dirección', content: '123 Calle Principal', description: 'Ciudad, País - CP 12345', color: 'bg-blue-600' },
+    { icon: ClockIcon, title: 'Horarios', content: 'Lun - Vie: 8:00 - 18:00', description: 'Sáb: 9:00 - 14:00', color: 'bg-blue-400' }
   ];
 
+  // Características o beneficios
   const features = [
-    {
-      icon: TruckIcon,
-      title: 'Entrega Rápida',
-      description: 'Envíos en 24-48 horas'
-    },
-    {
-      icon: HeartIcon,
-      title: 'Atención Personalizada',
-      description: 'Soporte dedicado para cada cliente'
-    },
-    {
-      icon: CheckCircleIcon,
-      title: 'Garantía Total',
-      description: 'Productos con garantía completa'
-    }
+    { icon: TruckIcon, title: 'Entrega Rápida', description: 'Envíos en 24-48 horas' },
+    { icon: HeartIcon, title: 'Atención Personalizada', description: 'Soporte dedicado para cada cliente' },
+    { icon: CheckCircleIcon, title: 'Garantía Total', description: 'Productos con garantía completa' }
   ];
 
   return (
@@ -213,7 +172,7 @@ const ModernContact = () => {
           </p>
         </div>
 
-        {/* Formulario en vertical */}
+        {/* Formulario */}
         <div className="bg-white shadow-lg rounded-xl p-8 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Envíanos un mensaje</h2>
 
@@ -225,6 +184,7 @@ const ModernContact = () => {
             </div>
           )}
 
+          {/* Mensaje de éxito */}
           {isSubmitted ? (
             <div className="text-center py-8">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -235,115 +195,59 @@ const ModernContact = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="nombres" className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombres <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="nombres"
-                  name="nombres"
-                  required
-                  value={formData.nombres}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
-                    fieldErrors.nombres ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Juan Carlos"
-                />
-                {fieldErrors.nombres && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.nombres}</p>
-                )}
-              </div>
+              {['nombres', 'apellidos', 'email', 'asunto', 'mensaje'].map((field, index) => {
+                const isTextarea = field === 'mensaje';
+                const label = {
+                  nombres: 'Nombres',
+                  apellidos: 'Apellidos',
+                  email: 'Correo electrónico',
+                  asunto: 'Asunto',
+                  mensaje: 'Mensaje'
+                }[field];
 
-              <div>
-                <label htmlFor="apellidos" className="block text-sm font-medium text-gray-700 mb-2">
-                  Apellidos <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="apellidos"
-                  name="apellidos"
-                  required
-                  value={formData.apellidos}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
-                    fieldErrors.apellidos ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Pérez González"
-                />
-                {fieldErrors.apellidos && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.apellidos}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Correo electrónico <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
-                    fieldErrors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="tu@email.com"
-                />
-                {fieldErrors.email && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="asunto" className="block text-sm font-medium text-gray-700 mb-2">
-                  Asunto <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="asunto"
-                  name="asunto"
-                  required
-                  value={formData.asunto}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
-                    fieldErrors.asunto ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="¿En qué te podemos ayudar?"
-                />
-                {fieldErrors.asunto && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.asunto}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="mensaje" className="block text-sm font-medium text-gray-700 mb-2">
-                  Mensaje <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="mensaje"
-                  name="mensaje"
-                  required
-                  rows={5}
-                  value={formData.mensaje}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition resize-none ${
-                    fieldErrors.mensaje ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Cuéntanos más detalles sobre tu consulta..."
-                ></textarea>
-                {fieldErrors.mensaje && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.mensaje}</p>
-                )}
-              </div>
+                return (
+                  <div key={index}>
+                    <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-2">
+                      {label} <span className="text-red-500">*</span>
+                    </label>
+                    {isTextarea ? (
+                      <textarea
+                        id={field}
+                        name={field}
+                        rows={5}
+                        required
+                        value={formData[field]}
+                        onChange={handleInputChange}
+                        onBlur={handleBlur}
+                        placeholder="Cuéntanos más detalles sobre tu consulta..."
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition resize-none ${
+                          fieldErrors[field] ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                    ) : (
+                      <input
+                        type={field === 'email' ? 'email' : 'text'}
+                        id={field}
+                        name={field}
+                        required
+                        value={formData[field]}
+                        onChange={handleInputChange}
+                        onBlur={handleBlur}
+                        placeholder={
+                          field === 'nombres' ? 'Juan Carlos' :
+                          field === 'apellidos' ? 'Pérez González' :
+                          field === 'email' ? 'tu@email.com' :
+                          '¿En qué te podemos ayudar?'
+                        }
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition ${
+                          fieldErrors[field] ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                    )}
+                    {fieldErrors[field] && <p className="mt-1 text-sm text-red-600">{fieldErrors[field]}</p>}
+                  </div>
+                );
+              })}
 
               <button
                 type="submit"

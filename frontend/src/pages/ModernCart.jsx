@@ -11,27 +11,45 @@ import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 
 const ModernCart = () => {
-  const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, loading, error } = useCart();
+  const { 
+    cartItems, 
+    removeFromCart, 
+    updateQuantity, 
+    getCartTotal, 
+    clearCart, 
+    loading, 
+    error 
+  } = useCart();
   const navigate = useNavigate();
-  
+
   const handleUpdateQuantity = async (productId, newQuantity) => {
     await updateQuantity(productId, newQuantity);
   };
-  
+
   const handleRemoveFromCart = async (productId) => {
     await removeFromCart(productId);
   };
-  
+
   const handleClearCart = async () => {
     if (window.confirm('¿Estás seguro de que quieres vaciar el carrito?')) {
       await clearCart();
     }
   };
 
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
+  };
+
+  // Carrito vacío
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-20 pb-12">
-        <div className="max-w-4xl mx-auto px-4">
+      <div className="min-h-screen bg-gray-50 pt-20 pb-12 flex flex-col">
+        <div className="max-w-4xl mx-auto px-4 flex-grow">
           <div className="text-center py-16">
             <div className="w-32 h-32 mx-auto mb-8 bg-gray-100 rounded-full flex items-center justify-center">
               <ShoppingCartIcon className="w-16 h-16 text-gray-400" />
@@ -53,22 +71,14 @@ const ModernCart = () => {
     );
   }
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(price);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-12">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 pt-20 pb-12 flex flex-col">
+      <div className="max-w-7xl mx-auto px-4 flex-grow">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Mi Carrito</h1>
           <p className="text-gray-600">Revisa y modifica tu selección de productos</p>
-          
+
           {error && (
             <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               <p>{error}</p>
@@ -88,6 +98,7 @@ const ModernCart = () => {
             {cartItems.map(item => (
               <div key={item.id} className="card p-6">
                 <div className="flex items-center space-x-4">
+                  {/* Imagen del producto */}
                   <div className="flex-shrink-0">
                     <img
                       src={item.imagen_url || 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=500&h=400&fit=crop'}
@@ -95,17 +106,15 @@ const ModernCart = () => {
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                   </div>
-                  
+
+                  {/* Información del producto */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {item.nombre}
-                    </h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.nombre}</h3>
                     <p className="text-sm text-gray-600 mb-2">{item.categoria_nombre || 'Producto'}</p>
-                    <p className="text-lg font-bold text-primary-600">
-                      {formatPrice(item.precio)}
-                    </p>
+                    <p className="text-lg font-bold text-primary-600">{formatPrice(item.precio)}</p>
                   </div>
 
+                  {/* Cantidad */}
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() => handleUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}
@@ -114,11 +123,9 @@ const ModernCart = () => {
                     >
                       <MinusIcon className="w-5 h-5" />
                     </button>
-                    
-                    <span className="w-12 text-center font-semibold text-gray-900">
-                      {item.quantity}
-                    </span>
-                    
+
+                    <span className="w-12 text-center font-semibold text-gray-900">{item.quantity}</span>
+
                     <button
                       onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                       className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 disabled:opacity-50"
@@ -128,6 +135,7 @@ const ModernCart = () => {
                     </button>
                   </div>
 
+                  {/* Total por producto y eliminar */}
                   <div className="text-right">
                     <p className="text-lg font-bold text-gray-900 mb-2">
                       {formatPrice(item.precio * item.quantity)}
@@ -146,32 +154,16 @@ const ModernCart = () => {
             ))}
           </div>
 
-          {/* Resumen de compra */}
+          {/* Resumen de compra y acciones */}
           <div className="space-y-6">
+            {/* Resumen */}
             <div className="card p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Resumen de Compra</h2>
-              
               <div className="space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-semibold">{formatPrice(getCartTotal())}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Envío:</span>
-                  <span className="font-semibold text-green-600">Gratis</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Impuestos:</span>
-                  <span className="font-semibold">{formatPrice(getCartTotal() * 0.1)}</span>
-                </div>
-                <div className="border-t pt-3">
-                  <div className="flex justify-between">
-                    <span className="text-lg font-bold text-gray-900">Total:</span>
-                    <span className="text-xl font-bold text-primary-600">
-                      {formatPrice(getCartTotal() * 1.1)}
-                    </span>
-                  </div>
-                </div>
+                <div className="flex justify-between"><span className="text-gray-600">Subtotal:</span><span className="font-semibold">{formatPrice(getCartTotal())}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Envío:</span><span className="font-semibold text-green-600">Gratis</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Impuestos:</span><span className="font-semibold">{formatPrice(getCartTotal() * 0.1)}</span></div>
+                <div className="border-t pt-3 flex justify-between"><span className="text-lg font-bold text-gray-900">Total:</span><span className="text-xl font-bold text-primary-600">{formatPrice(getCartTotal() * 1.1)}</span></div>
               </div>
 
               <div className="space-y-3">
@@ -182,7 +174,6 @@ const ModernCart = () => {
                   <CreditCardIcon className="w-5 h-5" />
                   <span>Proceder al Pago</span>
                 </button>
-                
                 <button
                   onClick={() => navigate('/productos')}
                   className="w-full btn-secondary flex items-center justify-center space-x-2"
@@ -193,16 +184,16 @@ const ModernCart = () => {
               </div>
             </div>
 
+            {/* Información de envío */}
             <div className="card p-6">
               <h3 className="font-semibold text-gray-900 mb-3">Información de Envío</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <p>🚚 <strong>Envío gratis</strong> en pedidos superiores a $50</p>
                 <p>📦 <strong>Entrega:</strong> 2-3 días hábiles</p>
-                <p>🔒 <strong>Pago seguro</strong> con encriptación SSL</p>
-                <p>↩️ <strong>Devoluciones:</strong> 30 días sin preguntas</p>
               </div>
             </div>
 
+            {/* Vaciar carrito */}
             {cartItems.length > 1 && (
               <div className="card p-6">
                 <button
@@ -217,12 +208,13 @@ const ModernCart = () => {
           </div>
         </div>
       </div>
-            {/* Footer */}
-            <footer className="bg-gray-900 text-gray-300 py-6 mt-8 text-center">
-              <p className="text-sm">
-                © {new Date().getFullYear()} <span className="font-semibold text-white">TuEmpresa</span>. Todos los derechos reservados.
-              </p>
-            </footer>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-300 py-6 mt-8 text-center">
+        <p className="text-sm">
+          © {new Date().getFullYear()} <span className="font-semibold text-white">Tecnoroute</span>. Todos los derechos reservados.
+        </p>
+      </footer>
     </div>
   );
 };

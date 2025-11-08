@@ -17,12 +17,13 @@ import { useAuth } from '../context/AuthContext';
 const ModernRegister = () => {
   const { register, getDashboardRoute } = useAuth();
 
+  // 🏙️ Ciudades ordenadas alfabéticamente
   const cities = [
-    'Medellín','Cali','Barranquilla','Cartagena','Bucaramanga','Pereira',
-    'Manizales','Armenia','Cúcuta','Ibagué','Neiva','Villavicencio','Tunja',
-    'Santa Marta','Montería','Sincelejo','Popayán','Pasto','Valledupar',
-    'Floridablanca','Palmira','Yopal','Riohacha','Quibdó','Arauca','Leticia'
-  ];
+    'Arauca','Armenia','Barranquilla','Bucaramanga','Cali','Cartagena','Cúcuta',
+    'Floridablanca','Ibagué','Leticia','Manizales','Medellín','Montería','Neiva',
+    'Palmira','Pasto','Popayán','Quibdó','Riohacha','Santa Marta','Sincelejo',
+    'Tunja','Valledupar','Villavicencio','Yopal'
+  ].sort();
 
   const [formData, setFormData] = useState({
     nombres: '',
@@ -50,12 +51,23 @@ const ModernRegister = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [debugCode, setDebugCode] = useState('');
 
+  // 🔠 Transformar a mayúsculas y validar caracteres en nombres/apellidos
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    let newValue = type === 'checkbox' ? checked : value;
+
+    if (name === 'nombres' || name === 'apellidos') {
+      // Solo letras y espacios
+      newValue = newValue.replace(/[^a-zA-ZÁÉÍÓÚáéíóúñÑ\s]/g, '');
+      // Mayúsculas automáticas
+      newValue = newValue.toUpperCase();
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: newValue
     }));
+
     if (error) setError('');
     if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
   };
@@ -81,6 +93,7 @@ const ModernRegister = () => {
       };
       return `${labels[name] || name} es requerido`;
     }
+
     switch (name) {
       case 'nombres':
         if (value.length < 2) error = 'Los nombres deben tener al menos 2 caracteres';
@@ -89,24 +102,32 @@ const ModernRegister = () => {
         if (value.length < 2) error = 'Los apellidos deben tener al menos 2 caracteres';
         break;
       case 'email':
-        if (!value.includes('@')) error = 'El correo debe contener el símbolo @';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Formato de correo inválido (ejemplo: usuario@dominio.com)';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+          error = 'Formato de correo inválido (ejemplo: usuario@dominio.com)';
         break;
       case 'phone':
-        if (value.replace(/\D/g, '').length < 7) error = 'El teléfono debe tener al menos 7 dígitos';
+        if (value.replace(/\D/g, '').length < 7)
+          error = 'El teléfono debe tener al menos 7 dígitos';
         break;
       case 'address':
-        if (value.length < 5) error = 'La dirección debe tener al menos 5 caracteres';
+        if (value.length < 5)
+          error = 'La dirección debe tener al menos 5 caracteres';
         break;
       case 'password':
-        if (value.length < 8) error = 'La contraseña debe tener al menos 8 caracteres';
-        else if (!/(?=.*[a-z])/.test(value)) error = 'La contraseña debe contener al menos una letra minúscula';
-        else if (!/(?=.*[A-Z])/.test(value)) error = 'La contraseña debe contener al menos una letra mayúscula';
-        else if (!/(?=.*\d)/.test(value)) error = 'La contraseña debe contener al menos un número';
-        else if (!/(?=.*[@$!%*?&])/.test(value)) error = 'La contraseña debe contener al menos un carácter especial (@$!%*?&)';
+        if (value.length < 8)
+          error = 'La contraseña debe tener al menos 8 caracteres';
+        else if (!/(?=.*[a-z])/.test(value))
+          error = 'Debe contener al menos una letra minúscula';
+        else if (!/(?=.*[A-Z])/.test(value))
+          error = 'Debe contener al menos una letra mayúscula';
+        else if (!/(?=.*\d)/.test(value))
+          error = 'Debe contener al menos un número';
+        else if (!/(?=.*[@$!%*?&])/.test(value))
+          error = 'Debe contener al menos un carácter especial (@$!%*?&)';
         break;
       case 'confirmPassword':
-        if (value !== formData.password) error = 'Las contraseñas no coinciden';
+        if (value !== formData.password)
+          error = 'Las contraseñas no coinciden';
         break;
       default:
         break;
@@ -184,28 +205,26 @@ const ModernRegister = () => {
     setLoading(true);
     setError('');
     setFieldErrors({});
+
     const errors = {};
     ['nombres','apellidos','email','phone','address','city','password','confirmPassword'].forEach(field => {
       const error = validateField(field, formData[field]);
       if (error) errors[field] = error;
     });
+
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       setError('Por favor corrige los errores en el formulario');
       setLoading(false);
       return;
     }
-    if (formData.password !== formData.confirmPassword) {
-      setFieldErrors({ confirmPassword: 'Las contraseñas no coinciden' });
-      setError('Las contraseñas no coinciden');
-      setLoading(false);
-      return;
-    }
+
     if (!formData.acceptTerms) {
       setError('Debes aceptar los términos y condiciones');
       setLoading(false);
       return;
     }
+
     const codeSent = await sendVerificationCode(formData.email);
     if (codeSent) setShowVerificationModal(true);
     setLoading(false);
@@ -234,21 +253,12 @@ const ModernRegister = () => {
           <div className="md:col-span-2">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="bg-gray-50 p-6 rounded-lg shadow-inner space-y-5">
-                <h2 className="text-xl font-semibold text-gray-800">Formulario de Registro</h2>
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                    {error}
-                  </div>
-                )}
 
                 {/* Campos en vertical */}
                 <div className="grid grid-cols-1 gap-4">
                   {[
-                    { id: 'nombres', label: 'Nombres', icon: UserIcon, type: 'text', placeholder: 'Juan Carlos' },
-                    { id: 'apellidos', label: 'Apellidos', icon: UserIcon, type: 'text', placeholder: 'Pérez González' },
+                    { id: 'nombres', label: 'Nombres', icon: UserIcon, type: 'text', placeholder: 'JUAN CARLOS' },
+                    { id: 'apellidos', label: 'Apellidos', icon: UserIcon, type: 'text', placeholder: 'PÉREZ GONZÁLEZ' },
                     { id: 'email', label: 'Correo electrónico', icon: EnvelopeIcon, type: 'email', placeholder: 'tu@email.com' },
                     { id: 'phone', label: 'Teléfono', icon: PhoneIcon, type: 'tel', placeholder: '+57 300 000 0000' },
                     { id: 'address', label: 'Dirección', icon: MapPinIcon, type: 'text', placeholder: 'Calle 123 #45-67' }
@@ -295,7 +305,7 @@ const ModernRegister = () => {
                   {fieldErrors.city && <p className="mt-1 text-sm text-red-600">{fieldErrors.city}</p>}
                 </div>
 
-                {/* Contraseñas */}
+                {/* Contraseñas sin copiar/pegar */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
                   <div className="relative">
@@ -307,6 +317,8 @@ const ModernRegister = () => {
                       value={formData.password}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
+                      onCopy={(e) => e.preventDefault()}
+                      onPaste={(e) => e.preventDefault()}
                       className={`w-full px-4 py-3 pl-10 pr-10 border rounded-lg focus:ring-2 focus:ring-primary-500 ${fieldErrors.password ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="Mínimo 8 caracteres, mayúscula, minúscula, número y símbolo"
                     />
@@ -331,6 +343,8 @@ const ModernRegister = () => {
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
+                      onCopy={(e) => e.preventDefault()}
+                      onPaste={(e) => e.preventDefault()}
                       className={`w-full px-4 py-3 pl-10 pr-10 border rounded-lg focus:ring-2 focus:ring-primary-500 ${fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="Repite tu contraseña"
                     />
@@ -356,7 +370,7 @@ const ModernRegister = () => {
                       required
                       checked={formData.acceptTerms}
                       onChange={handleInputChange}
-                      className={`h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mt-1 ${!formData.acceptTerms && error.includes('términos') ? 'border-red-500' : ''}`}
+                      className={`h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mt-1`}
                     />
                     <label htmlFor="acceptTerms" className="ml-2 text-sm text-gray-800">
                       Acepto los <span className="text-primary-600 underline cursor-pointer">términos y condiciones</span> y la <span className="text-primary-600 underline cursor-pointer">política de privacidad</span> *
