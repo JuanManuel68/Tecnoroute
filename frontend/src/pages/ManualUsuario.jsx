@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Importar las imágenes desde src/manual/
+// Imágenes del manual
 import registroBoton from '../manual/registro-boton.png';
 import formularioRegistro from '../manual/formulario-registro.png';
 import explorarPagina from '../manual/explorar-pagina.png';
@@ -21,119 +21,131 @@ const ManualUsuario = () => {
         /* Fondo general */
         .manual-container {
           min-height: 100vh;
-          background: linear-gradient(180deg, #eaf3ff 0%, #ffffff 100%);
+          background: linear-gradient(135deg, #e3f2fd, #bbdefb, #e8f0fe);
           padding: 60px 20px;
           display: flex;
           justify-content: center;
           align-items: flex-start;
         }
 
-        /* Tarjeta central */
+        /* Tarjeta principal */
         .manual-card {
           background: #ffffff;
           border-radius: 20px;
-          box-shadow: 0 10px 25px rgba(0, 90, 200, 0.1);
+          box-shadow: 0 12px 30px rgba(0, 90, 200, 0.15);
           max-width: 900px;
           width: 100%;
-          padding: 40px 30px;
+          padding: 50px 40px;
           animation: fadeIn 0.8s ease-in-out;
+          position: relative;
         }
 
-        /* Títulos */
         .manual-title {
-          font-size: 2rem;
-          font-weight: 700;
+          font-size: 2.3rem;
+          font-weight: 800;
           color: #0a3d91;
           text-align: center;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
         }
 
         .manual-subtitle {
           text-align: center;
           color: #4b5563;
-          font-size: 1rem;
-          margin-bottom: 30px;
+          font-size: 1.1rem;
+          margin-bottom: 40px;
         }
 
-        /* Cada paso */
+        /* Pasos */
         .manual-step {
-          margin-bottom: 40px;
-          padding: 20px;
-          border-left: 5px solid #0a3d91;
-          border-radius: 10px;
+          margin-bottom: 45px;
+          padding: 25px;
+          border-left: 6px solid #1976d2;
+          border-radius: 12px;
           background: #f9fbff;
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .manual-step:hover {
           transform: translateY(-5px);
-          box-shadow: 0 5px 15px rgba(0, 90, 200, 0.1);
+          box-shadow: 0 5px 20px rgba(25, 118, 210, 0.1);
         }
 
         .manual-step h2 {
           color: #0a3d91;
-          font-size: 1.2rem;
-          font-weight: 600;
+          font-size: 1.3rem;
+          font-weight: 700;
           margin-bottom: 10px;
         }
 
         .manual-step p {
           color: #374151;
           margin-bottom: 15px;
-          line-height: 1.6;
+          line-height: 1.7;
         }
 
         .manual-step img {
           display: block;
           width: 100%;
           max-width: 600px;
-          margin: 0 auto;
+          margin: 15px auto 0;
           border-radius: 10px;
           border: 1px solid #d1e3ff;
-          box-shadow: 0 3px 8px rgba(0, 90, 200, 0.08);
+          box-shadow: 0 3px 10px rgba(0, 90, 200, 0.08);
         }
 
         /* Sección final */
         .manual-end {
           text-align: center;
-          margin-top: 40px;
+          margin-top: 50px;
         }
 
         .manual-end p {
           color: #0a3d91;
-          font-weight: 500;
-          margin-bottom: 20px;
+          font-weight: 600;
+          margin-bottom: 25px;
+          font-size: 1.1rem;
         }
 
-        /* Botón */
+        /* Botón de descarga */
         .manual-btn {
-          background: linear-gradient(90deg, #0077ff, #0052cc);
+          background: linear-gradient(90deg, #1976d2, #0d47a1);
           color: white;
           font-weight: 600;
-          padding: 12px 28px;
+          padding: 14px 32px;
           border: none;
-          border-radius: 8px;
+          border-radius: 10px;
           cursor: pointer;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 10px rgba(0, 90, 200, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 90, 200, 0.2);
+          font-size: 1rem;
         }
 
         .manual-btn:hover {
-          background: linear-gradient(90deg, #0052cc, #003c99);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 15px rgba(0, 90, 200, 0.3);
+          background: linear-gradient(90deg, #1565c0, #0d47a1);
+          transform: translateY(-3px);
+          box-shadow: 0 6px 20px rgba(0, 90, 200, 0.3);
         }
 
-        /* Animación de aparición */
+        /* Footer */
+        footer {
+          background-color: #0d47a1;
+          color: #e3f2fd;
+          padding: 20px;
+          border-radius: 0 0 20px 20px;
+          text-align: center;
+          margin-top: 40px;
+          font-size: 0.9rem;
+        }
+
+        footer span {
+          color: #ffffff;
+          font-weight: 700;
+        }
+
+        /* Animación */
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
@@ -148,7 +160,7 @@ const ManualUsuario = () => {
           <div className="manual-step">
             <h2>🪪 Paso 1: Accede a la página de registro</h2>
             <p>
-              Haz clic en el botón <strong>“Registrarse”</strong> en la parte superior derecha del sitio o en el centro de la pagina de inicio.
+              Haz clic en el botón <strong>“Registrarse”</strong> en la parte superior derecha del sitio o en el centro de la página de inicio.
             </p>
             <img src={registroBoton} alt="Botón de registro" />
           </div>
@@ -157,31 +169,29 @@ const ManualUsuario = () => {
           <div className="manual-step">
             <h2>✍️ Paso 2: Completa tus datos</h2>
             <p>
-              Llena el formulario con tu <strong>nombre, correo electrónico</strong> y una{' '}
-              <strong>contraseña segura</strong>.
+              Llena el formulario con tu <strong>nombre</strong>, <strong>correo electrónico</strong> y una <strong>contraseña segura</strong>.
             </p>
             <img src={formularioRegistro} alt="Formulario de registro" />
           </div>
 
           {/* Paso 3 */}
           <div className="manual-step">
-            <h2>📩 Paso 3: Redirecionamiento a la página</h2>
+            <h2>📩 Paso 3: Redirección a la página de productos</h2>
             <p>
-              Apenas te hayas registrado, la página te enviará automáticamente a la página de productos para que puedas empezar a explorar.
+              Una vez registrado, serás redirigido automáticamente a la página de productos para que puedas empezar a explorar.
             </p>
             <img src={explorarPagina} alt="Explorar página" />
           </div>
 
           {/* Final */}
           <div className="manual-end">
-            <p>🚀 ¡Listo! Ya puedes disfrutar de todos los servicios de TecnoRoute.</p>
+            <p>🚀 ¡Listo! Ya puedes disfrutar de todos los servicios de <strong>TecnoRoute</strong>.</p>
 
           </div>
-                    {/* Footer */}
-          <footer className="bg-gray-900 text-gray-300 py-6 mt-8 text-center">
-            <p className="text-sm">
-              © {new Date().getFullYear()} <span className="font-semibold text-white">TecnoRoute</span>. Todos los derechos reservados.
-            </p>
+
+          {/* Footer */}
+          <footer>
+            © {new Date().getFullYear()} <span>TecnoRoute</span>. Todos los derechos reservados.
           </footer>
         </div>
       </div>
