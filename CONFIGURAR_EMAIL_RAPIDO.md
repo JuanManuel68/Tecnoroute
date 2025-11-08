@@ -38,9 +38,9 @@ Ejemplo: abcd efgh ijkl mnop
 
 ### 5️⃣ Edita el archivo `.env` en `backend/`:
 ```env
-EMAIL_HOST_USER=tu-correo-real@gmail.com
-EMAIL_HOST_PASSWORD=abcdefghijklmnop
-DEFAULT_FROM_EMAIL=TecnoRoute <tu-correo-real@gmail.com>
+EMAIL_HOST_USER=tecnoroute20@gmail.com
+EMAIL_HOST_PASSWORD=kkrypjyypecbsxvd
+DEFAULT_FROM_EMAIL=TecnoRoute <tecnoroute20@gmail.com>
 ```
 
 ### 6️⃣ Reinicia el servidor Django:
