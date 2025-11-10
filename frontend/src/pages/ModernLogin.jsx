@@ -4,10 +4,37 @@ import {
   UserIcon,
   EyeIcon,
   EyeSlashIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+
+// --- MOCK DE DEPENDENCIAS PARA ENTORNO DE ARCHIVO ÚNICO ---
+
+// 1. Mock de useNavigate y useSearchParams (React Router)
+const useNavigate = () => (path) => console.log('Navegando a:', path);
+const useSearchParams = () => [{ get: (key) => key === 'type' ? 'admin' : null }]; // Default a 'admin' para simular un uso
+
+// 2. Mock de useAuth
+const useAuth = () => ({
+  // Simula una función de login
+  login: async (email, password) => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    if (email === 'admin@route.com' && password === '123456') {
+      return { success: true };
+    } else {
+      return { success: false, error: 'Credenciales inválidas. Usuario de prueba: admin@route.com / 123456' };
+    }
+  },
+  // Simula la obtención de ruta del dashboard
+  getDashboardRoute: () => '/dashboard'
+});
+// -----------------------------------------------------------
+
+
+// Definición de colores principales
+// Morado Principal (Purple) = #7c3aed (indigo-600)
+// Acento Suave (Lavender) = #ede9fe (indigo-100)
+// Morado Oscuro para fondo = #4c1d95 (violeta oscuro, para contraste)
 
 const ModernLogin = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -16,7 +43,8 @@ const ModernLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const [searchParams] = useSearchParams();
-  const loginType = searchParams.get('type');
+  // Usamos 'admin' como default para simular el tipo si no se encuentra en URL
+  const loginType = searchParams.get('type') || 'admin';
 
   // Estados para recuperación de contraseña
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -55,27 +83,25 @@ const ModernLogin = () => {
     setLoading(false);
   };
 
-  // Funciones recuperación
+  // Funciones recuperación - Usando mocks para las APIs
   const handleRequestReset = async () => {
     setRecoveryLoading(true);
     setRecoveryError('');
     setRecoverySuccess('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/request-password-reset/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: recoveryEmail })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setRecoverySuccess(data.message);
-        setRecoveryStep(2);
-      } else {
-        setRecoveryError(data.error || 'Error al enviar el código');
+      // Simulamos el envío de código
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      if (!recoveryEmail.includes('@')) {
+        setRecoveryError('Correo inválido');
+        return;
       }
+
+      setRecoverySuccess(`Código enviado a ${recoveryEmail}. Código de prueba: 123456`);
+      setRecoveryStep(2);
     } catch {
-      setRecoveryError('Error de conexión. Intenta de nuevo.');
+      setRecoveryError('Error de conexión simulado. Intenta de nuevo.');
     } finally {
       setRecoveryLoading(false);
     }
@@ -85,21 +111,18 @@ const ModernLogin = () => {
     setRecoveryLoading(true);
     setRecoveryError('');
     setRecoverySuccess('');
+
     try {
-      const response = await fetch('http://localhost:8000/api/auth/verify-reset-code/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: recoveryEmail, code: recoveryCode })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setRecoverySuccess(data.message);
+      // Simulamos la verificación
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (recoveryCode === '123456') {
+        setRecoverySuccess('Código verificado correctamente. Procede a cambiar tu contraseña.');
         setRecoveryStep(3);
       } else {
-        setRecoveryError(data.error || 'Código inválido');
+        setRecoveryError('Código inválido. Intenta de nuevo.');
       }
     } catch {
-      setRecoveryError('Error de conexión. Intenta de nuevo.');
+      setRecoveryError('Error de conexión simulado. Intenta de nuevo.');
     } finally {
       setRecoveryLoading(false);
     }
@@ -110,32 +133,24 @@ const ModernLogin = () => {
       setRecoveryError('Las contraseñas no coinciden');
       return;
     }
-    if (newPassword.length < 8) {
-      setRecoveryError('La contraseña debe tener al menos 8 caracteres');
+    if (newPassword.length < 6) {
+      setRecoveryError('La contraseña debe tener al menos 6 caracteres (mínimo de prueba)');
       return;
     }
 
     setRecoveryLoading(true);
     setRecoveryError('');
     setRecoverySuccess('');
+
     try {
-      const response = await fetch('http://localhost:8000/api/auth/reset-password/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: recoveryEmail, code: recoveryCode, new_password: newPassword })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setRecoverySuccess(data.message);
-        setTimeout(() => {
-          setShowRecoveryModal(false);
-          setRecoveryStep(1);
-        }, 2000);
-      } else {
-        setRecoveryError(data.error || 'Error al restablecer la contraseña');
-      }
+      // Simulamos el restablecimiento
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setRecoverySuccess('¡Contraseña restablecida con éxito! Serás redirigido.');
+      setTimeout(() => {
+        closeRecoveryModal();
+      }, 2000);
     } catch {
-      setRecoveryError('Error de conexión. Intenta de nuevo.');
+      setRecoveryError('Error de conexión simulado. Intenta de nuevo.');
     } finally {
       setRecoveryLoading(false);
     }
@@ -150,14 +165,17 @@ const ModernLogin = () => {
     setConfirmNewPassword('');
     setRecoveryError('');
     setRecoverySuccess('');
+    setShowNewPassword(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0066ff] via-[#0044cc] to-[#002b80] flex items-center justify-center px-6 py-12">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10">
+    // CAMBIO 1: Fondo más claro, degradado de blanco a morado muy suave (#ede9fe)
+    <div className="min-h-screen bg-gradient-to-br from-white to-[#ede9fe] flex items-center justify-center px-4 py-12 font-inter">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 sm:p-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="bg-gradient-to-br from-[#ff6b00] to-[#ffd60a] w-20 h-20 rounded-2xl flex items-center justify-center mx-auto shadow-md">
+          {/* CAMBIO 2: Ícono con color sólido (#a78bfa) sin degradado */}
+          <div className="bg-[#a78bfa] w-20 h-20 rounded-2xl flex items-center justify-center mx-auto shadow-xl transform hover:scale-105 transition-transform duration-300">
             <TruckIcon className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold text-gray-900 mt-4">
@@ -166,7 +184,7 @@ const ModernLogin = () => {
           <p className="text-gray-600 mt-2">
             {loginType === 'user'
               ? 'Accede para explorar nuestros productos'
-              : 'Inicia sesión para continuar'}
+              : 'Inicia sesión para continuar con tu gestión'}
           </p>
         </div>
 
@@ -182,7 +200,8 @@ const ModernLogin = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Correo electrónico</label>
             <div className="relative">
-              <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              {/* Ícono en Morado Suave */}
+              <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#c4b5fd] w-5 h-5" />
               <input
                 type="email"
                 name="email"
@@ -190,7 +209,8 @@ const ModernLogin = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="correo@ejemplo.com"
-                className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-[#0066ff] focus:border-transparent text-gray-800"
+                // Foco en Morado Principal
+                className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 transition-all focus:ring-2 focus:ring-[#7c3aed] focus:border-[#7c3aed] text-gray-800"
               />
             </div>
           </div>
@@ -199,6 +219,8 @@ const ModernLogin = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
             <div className="relative">
+               {/* Ícono en Morado Suave */}
+              <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#c4b5fd] w-5 h-5" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -206,31 +228,45 @@ const ModernLogin = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 placeholder="••••••••"
-                className="w-full border border-gray-300 rounded-lg pr-10 pl-4 py-3 focus:ring-2 focus:ring-[#0066ff] focus:border-transparent text-gray-800"
+                // Foco en Morado Principal
+                className="w-full border border-gray-300 rounded-lg pr-10 pl-10 py-3 transition-all focus:ring-2 focus:ring-[#7c3aed] focus:border-[#7c3aed] text-gray-800"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#0066ff]"
+                // Hover en Morado Principal
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#7c3aed] transition-colors"
               >
                 {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
               </button>
             </div>
           </div>
+          {/* Forgot password section to allow spacing */}
+          <div className="text-right pt-1">
+            <button
+              type="button"
+              onClick={() => setShowRecoveryModal(true)}
+              // Link en Morado Principal
+              className="text-sm text-[#7c3aed] hover:text-[#5b21b6] hover:underline transition-colors"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
 
 
-          {/* Submit button */}
+          {/* Submit button - Morado principal con degradado a un tono más oscuro */}
           <button
             type="submit"
             disabled={loading}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg text-lg font-semibold text-white transition-all shadow-lg ${
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg text-lg font-semibold text-white transition-all duration-300 shadow-lg ${
               loading
                 ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-[#ff6b00] to-[#ff9100] hover:scale-105 hover:shadow-xl'
+                // Degradado del Morado Principal
+                : 'bg-gradient-to-r from-[#7c3aed] to-[#5b21b6] hover:scale-[1.02] hover:shadow-xl'
             }`}
           >
             {loading ? (
-              <div className="animate-spin h-5 w-5 border-b-2 border-white rounded-full"></div>
+              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
             ) : (
               <>
                 Iniciar sesión <ArrowRightIcon className="w-5 h-5" />
@@ -238,24 +274,14 @@ const ModernLogin = () => {
             )}
           </button>
         </form>
-        
-          {/* Forgot password */}
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={() => setShowRecoveryModal(true)}
-              className="text-sm text-[#0066ff] hover:underline"
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-          </div>
 
         {/* Register */}
-        <div className="mt-6 text-center text-gray-700">
+        <div className="mt-8 text-center text-gray-700">
           ¿No tienes cuenta?{' '}
           <button
             onClick={() => navigate('/register')}
-            className="text-[#0066ff] hover:text-[#0044cc] font-semibold"
+            // Link en Morado Principal
+            className="text-[#7c3aed] hover:text-[#5b21b6] font-semibold transition-colors"
           >
             Regístrate aquí
           </button>
@@ -264,52 +290,54 @@ const ModernLogin = () => {
 
       {/* Password Recovery Modal */}
       {showRecoveryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative transform scale-100 transition-transform duration-300">
             <button
               onClick={closeRecoveryModal}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 transition-colors p-2 rounded-full hover:bg-gray-100"
             >
               ✕
             </button>
 
             <h3 className="text-2xl font-bold text-gray-900 mb-2">Recuperar contraseña</h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-6 text-sm">
               {recoveryStep === 1
-                ? 'Ingresa tu correo para recibir un código'
+                ? 'Ingresa tu correo para recibir un código de verificación.'
                 : recoveryStep === 2
-                ? 'Ingresa el código recibido'
-                : 'Crea tu nueva contraseña'}
+                ? `Ingresa el código enviado a ${recoveryEmail}`
+                : 'Establece tu nueva contraseña segura.'}
             </p>
 
             {recoveryError && (
-              <div className="bg-red-50 text-red-700 border border-red-300 rounded-lg px-4 py-2 mb-3">
+              <div className="bg-red-50 text-red-700 border border-red-300 rounded-lg px-4 py-2 mb-3 text-sm">
                 {recoveryError}
               </div>
             )}
             {recoverySuccess && (
-              <div className="bg-green-50 text-green-700 border border-green-300 rounded-lg px-4 py-2 mb-3">
+              <div className="bg-green-50 text-green-700 border border-green-300 rounded-lg px-4 py-2 mb-3 text-sm">
                 {recoverySuccess}
               </div>
             )}
 
-            {/* Paso 1 */}
+            {/* Paso 1: Enviar correo */}
             {recoveryStep === 1 && (
               <>
                 <input
                   type="email"
                   value={recoveryEmail}
                   onChange={(e) => setRecoveryEmail(e.target.value)}
-                  placeholder="correo@ejemplo.com"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-[#0066ff]"
+                  placeholder="Correo electrónico registrado"
+                  // Foco en Morado Principal
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-6 transition-all focus:ring-2 focus:ring-[#7c3aed] focus:border-[#7c3aed]"
                 />
                 <button
                   onClick={handleRequestReset}
                   disabled={!recoveryEmail || recoveryLoading}
-                  className={`w-full py-3 rounded-lg text-white font-semibold ${
+                  className={`w-full py-3 rounded-lg text-white font-semibold transition-all duration-300 shadow-md ${
                     !recoveryEmail || recoveryLoading
-                      ? 'bg-gray-400'
-                      : 'bg-gradient-to-r from-[#0066ff] to-[#0044cc] hover:scale-105'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      // Acento Morado Principal para acciones modales
+                      : 'bg-gradient-to-r from-[#7c3aed] to-[#5b21b6] hover:scale-[1.02]'
                   }`}
                 >
                   {recoveryLoading ? 'Enviando...' : 'Enviar código'}
@@ -317,7 +345,7 @@ const ModernLogin = () => {
               </>
             )}
 
-            {/* Paso 2 */}
+            {/* Paso 2: Verificar código */}
             {recoveryStep === 2 && (
               <>
                 <input
@@ -326,41 +354,64 @@ const ModernLogin = () => {
                   value={recoveryCode}
                   onChange={(e) => setRecoveryCode(e.target.value)}
                   placeholder="Código de 6 dígitos"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 text-center tracking-widest focus:ring-2 focus:ring-[#0066ff]"
+                  // Foco en Morado Principal
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-6 text-center tracking-widest transition-all focus:ring-2 focus:ring-[#7c3aed] focus:border-[#7c3aed]"
                 />
                 <button
                   onClick={handleVerifyCode}
-                  disabled={recoveryCode.length !== 6}
-                  className="w-full py-3 rounded-lg text-white font-semibold bg-gradient-to-r from-[#0066ff] to-[#0044cc] hover:scale-105"
+                  disabled={recoveryLoading || recoveryCode.length !== 6}
+                  className={`w-full py-3 rounded-lg text-white font-semibold transition-all duration-300 shadow-md ${
+                    recoveryLoading || recoveryCode.length !== 6
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      // Acento Morado Principal
+                      : 'bg-gradient-to-r from-[#7c3aed] to-[#5b21b6] hover:scale-[1.02]'
+                  }`}
                 >
-                  Verificar código
+                  {recoveryLoading ? 'Verificando...' : 'Verificar código'}
                 </button>
               </>
             )}
 
-            {/* Paso 3 */}
+            {/* Paso 3: Nueva contraseña */}
             {recoveryStep === 3 && (
               <>
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Nueva contraseña"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3 focus:ring-2 focus:ring-[#0066ff]"
-                />
+                <div className="relative mb-3">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Nueva contraseña (min. 6 caracteres)"
+                    // Foco en Morado Principal
+                    className="w-full border border-gray-300 rounded-lg pr-10 pl-4 py-3 transition-all focus:ring-2 focus:ring-[#7c3aed] focus:border-[#7c3aed]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    // Hover en Morado Principal
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#7c3aed] transition-colors"
+                  >
+                    {showNewPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                  </button>
+                </div>
                 <input
                   type={showNewPassword ? 'text' : 'password'}
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="Confirmar contraseña"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-[#0066ff]"
+                  placeholder="Confirmar nueva contraseña"
+                  // Foco en Morado Principal
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-6 transition-all focus:ring-2 focus:ring-[#7c3aed] focus:border-[#7c3aed]"
                 />
                 <button
                   onClick={handleResetPassword}
-                  disabled={!newPassword || !confirmNewPassword}
-                  className="w-full py-3 rounded-lg text-white font-semibold bg-gradient-to-r from-[#ff6b00] to-[#ff9100] hover:scale-105"
+                  disabled={recoveryLoading || !newPassword || !confirmNewPassword}
+                  className={`w-full py-3 rounded-lg text-white font-semibold transition-all duration-300 shadow-md ${
+                    recoveryLoading || !newPassword || !confirmNewPassword
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      // Degradado del Morado Principal para la acción final
+                      : 'bg-gradient-to-r from-[#7c3aed] to-[#5b21b6] hover:scale-[1.02]'
+                  }`}
                 >
-                  Restablecer contraseña
+                  {recoveryLoading ? 'Restableciendo...' : 'Restablecer contraseña'}
                 </button>
               </>
             )}

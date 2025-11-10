@@ -6,33 +6,28 @@ import formularioRegistro from '../manual/formulario-registro.png';
 import explorarPagina from '../manual/explorar-pagina.png';
 
 const ManualUsuario = () => {
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = '/manual/manual-usuario.pdf';
-    link.download = 'Manual-de-Usuario-TecnoRoute.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+
 
   return (
     <>
       <style>{`
-        /* Fondo general */
+        /* Fondo general: Degradado de blanco a lavanda muy suave */
         .manual-container {
           min-height: 100vh;
-          background: linear-gradient(135deg, #e3f2fd, #bbdefb, #e8f0fe);
+          background: linear-gradient(135deg, #ffffff, #ede9fe);
           padding: 60px 20px;
           display: flex;
           justify-content: center;
           align-items: flex-start;
+          font-family: 'Inter', sans-serif;
         }
 
         /* Tarjeta principal */
         .manual-card {
           background: #ffffff;
           border-radius: 20px;
-          box-shadow: 0 12px 30px rgba(0, 90, 200, 0.15);
+          /* Sombra con toque de morado */
+          box-shadow: 0 12px 30px rgba(91, 33, 182, 0.1); 
           max-width: 900px;
           width: 100%;
           padding: 50px 40px;
@@ -43,7 +38,8 @@ const ManualUsuario = () => {
         .manual-title {
           font-size: 2.3rem;
           font-weight: 800;
-          color: #0a3d91;
+          /* Título en Morado Oscuro */
+          color: #5b21b6; 
           text-align: center;
           margin-bottom: 12px;
         }
@@ -59,19 +55,22 @@ const ManualUsuario = () => {
         .manual-step {
           margin-bottom: 45px;
           padding: 25px;
-          border-left: 6px solid #1976d2;
+          /* Borde en Morado Principal */
+          border-left: 6px solid #7c3aed; 
           border-radius: 12px;
-          background: #f9fbff;
+          background: #f9f8ff; /* Fondo muy ligero */
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .manual-step:hover {
           transform: translateY(-5px);
-          box-shadow: 0 5px 20px rgba(25, 118, 210, 0.1);
+          /* Sombra sutil del morado principal */
+          box-shadow: 0 5px 20px rgba(124, 58, 237, 0.1); 
         }
 
         .manual-step h2 {
-          color: #0a3d91;
+          /* Subtítulos en Morado Oscuro */
+          color: #5b21b6; 
           font-size: 1.3rem;
           font-weight: 700;
           margin-bottom: 10px;
@@ -89,8 +88,9 @@ const ManualUsuario = () => {
           max-width: 600px;
           margin: 15px auto 0;
           border-radius: 10px;
-          border: 1px solid #d1e3ff;
-          box-shadow: 0 3px 10px rgba(0, 90, 200, 0.08);
+          /* Borde sutil */
+          border: 1px solid #c4b5fd; 
+          box-shadow: 0 3px 10px rgba(91, 33, 182, 0.05);
         }
 
         /* Sección final */
@@ -100,7 +100,8 @@ const ManualUsuario = () => {
         }
 
         .manual-end p {
-          color: #0a3d91;
+          /* Texto final en Morado Oscuro */
+          color: #5b21b6; 
           font-weight: 600;
           margin-bottom: 25px;
           font-size: 1.1rem;
@@ -108,7 +109,8 @@ const ManualUsuario = () => {
 
         /* Botón de descarga */
         .manual-btn {
-          background: linear-gradient(90deg, #1976d2, #0d47a1);
+          /* Degradado de Morado Principal a Oscuro */
+          background: linear-gradient(90deg, #7c3aed, #5b21b6);
           color: white;
           font-weight: 600;
           padding: 14px 32px;
@@ -116,20 +118,21 @@ const ManualUsuario = () => {
           border-radius: 10px;
           cursor: pointer;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(0, 90, 200, 0.2);
+          box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
           font-size: 1rem;
         }
 
         .manual-btn:hover {
-          background: linear-gradient(90deg, #1565c0, #0d47a1);
+          background: linear-gradient(90deg, #6d28d9, #5b21b6);
           transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(0, 90, 200, 0.3);
+          box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
         }
 
         /* Footer */
         footer {
-          background-color: #0d47a1;
-          color: #e3f2fd;
+          /* Fondo en Morado Oscuro */
+          background-color: #5b21b6; 
+          color: #e0d7fe;
           padding: 20px;
           border-radius: 0 0 20px 20px;
           text-align: center;
@@ -151,7 +154,7 @@ const ManualUsuario = () => {
 
       <div className="manual-container">
         <div className="manual-card">
-          <h1 className="manual-title">📘 Manual de Usuario – TecnoRoute</h1>
+          <h1 className="manual-title">Manual de Usuario </h1>
           <p className="manual-subtitle">
             Aprende cómo registrarte y comenzar a usar la plataforma de forma sencilla y rápida.
           </p>
