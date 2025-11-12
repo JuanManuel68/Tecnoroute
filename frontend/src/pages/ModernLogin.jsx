@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   TruckIcon,
   UserIcon,
@@ -7,28 +9,6 @@ import {
   ArrowRightIcon,
   LockClosedIcon
 } from '@heroicons/react/24/outline';
-
-// --- MOCK DE DEPENDENCIAS PARA ENTORNO DE ARCHIVO ÚNICO ---
-
-// 1. Mock de useNavigate y useSearchParams (React Router)
-const useNavigate = () => (path) => console.log('Navegando a:', path);
-const useSearchParams = () => [{ get: (key) => key === 'type' ? 'admin' : null }]; // Default a 'admin' para simular un uso
-
-// 2. Mock de useAuth
-const useAuth = () => ({
-  // Simula una función de login
-  login: async (email, password) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    if (email === 'admin@route.com' && password === '123456') {
-      return { success: true };
-    } else {
-      return { success: false, error: 'Credenciales inválidas. Usuario de prueba: admin@route.com / 123456' };
-    }
-  },
-  // Simula la obtención de ruta del dashboard
-  getDashboardRoute: () => '/dashboard'
-});
-// -----------------------------------------------------------
 
 
 // Definición de colores principales

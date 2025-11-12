@@ -1,4 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -12,29 +14,8 @@ import {
   TruckIcon
 } from '@heroicons/react/24/outline';
 
-// MOCK NAVIGATION and AUTH CONTEXT
-// En este entorno de archivo único, reemplazamos dependencias externas.
-
-// 1. Mock Navigation Function
-const useNavigate = () => {
-    // Simula la navegación registrando la ruta de destino en la consola
-    return (route) => console.log(`[MOCK NAVIGATION]: Attempting to navigate to ${route}`);
-};
-
-// 2. Mock Auth Context
-const useAuth = () => ({
-    // Simula la función de registro
-    register: (userData) => {
-        console.log("MOCK REGISTER SUCCESS:", userData);
-        return { success: true, message: "Registration successful" };
-    },
-    // Simula la ruta del dashboard
-    getDashboardRoute: () => '/mock-dashboard',
-});
-
 
 const ModernRegister = () => {
-  // Usar las funciones mock
   const { register, getDashboardRoute } = useAuth();
   const navigate = useNavigate();
 
@@ -64,12 +45,6 @@ const ModernRegister = () => {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
-
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [verificationError, setVerificationError] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [debugCode, setDebugCode] = useState('');
 
   // 🔠 Transformar a mayúsculas y validar caracteres en nombres/apellidos
   const handleInputChange = (e) => {
@@ -157,65 +132,6 @@ const ModernRegister = () => {
   };
 
 
-  // MOCK function replacing the API call
-  const mockSendVerificationCode = useCallback(async (email) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulate successful code sending and provide a debug code
-    const mockCode = '123456'; 
-    setDebugCode(mockCode);
-    console.log(`[MOCK API]: Verification code for ${email} is ${mockCode}`);
-    setError(''); // Clear any previous error
-    return true; // Indicate success
-  }, []);
-
-  // MOCK function replacing the API call and registration
-  const handleVerifyAndRegister = useCallback(async () => {
-    if (!verificationCode || verificationCode.length !== 6) {
-      setVerificationError('El código debe tener 6 dígitos');
-      return;
-    }
-    setIsVerifying(true);
-    setVerificationError('');
-
-    // 1. MOCK Verification Step
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    const isCodeValid = verificationCode === debugCode;
-
-    if (!isCodeValid) {
-        setVerificationError('Código inválido. Intenta de nuevo.');
-        setIsVerifying(false);
-        return;
-    }
-    
-    // 2. MOCK Registration Step (only runs if code is valid)
-    try {
-      const result = register({
-        nombres: formData.nombres,
-        apellidos: formData.apellidos,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city
-      });
-
-      if (result.success) {
-        setShowVerificationModal(false);
-        // Using mock navigate
-        setTimeout(() => navigate(getDashboardRoute()), 100); 
-      } else {
-        setVerificationError(result.error || 'Error al crear la cuenta');
-      }
-    } catch (error) {
-      console.error('[MOCK ERROR]:', error);
-      setVerificationError('Error al procesar el registro.');
-    } finally {
-      setIsVerifying(false);
-    }
-  }, [verificationCode, debugCode, formData, register, navigate, getDashboardRoute]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -241,10 +157,25 @@ const ModernRegister = () => {
       return;
     }
 
-    // Call MOCK function
-    const codeSent = await mockSendVerificationCode(formData.email);
-    
-    if (codeSent) setShowVerificationModal(true);
+    // Registrar directamente sin verificación de código
+    const result = await register({
+      nombres: formData.nombres,
+      apellidos: formData.apellidos,
+      email: formData.email,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword,
+      phone: formData.phone,
+      address: formData.address,
+      city: formData.city,
+      role: formData.role
+    });
+
+    if (result.success) {
+      // Navegar al dashboard después del registro exitoso
+      navigate(getDashboardRoute());
+    } else {
+      setError(result.error || 'Error al crear la cuenta');
+    }
     
     setLoading(false);
   };
@@ -256,9 +187,7 @@ const ModernRegister = () => {
   ];
 
   return (
-    // Load Tailwind CSS script for utility classes (required for HTML/React single-file apps)
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-10 px-4 font-sans">
-      <script src="https://cdn.tailwindcss.com"></script>
       <div className="max-w-5xl w-full bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -420,7 +349,7 @@ const ModernRegister = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Enviando código...
+                      Registrando...
                     </>
                   ) : 'Registrarse'}
                 </button>
@@ -447,66 +376,6 @@ const ModernRegister = () => {
           </div>
         </div>
 
-        {/* Modal de verificación */}
-        {showVerificationModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transform transition-all duration-300 scale-100">
-              <h2 className="text-2xl font-bold text-violet-700 mb-4">Verificación Requerida</h2>
-              <p className="text-gray-700 mb-4">
-                Ingresa el código de 6 dígitos que enviamos a <span className="font-medium text-violet-600">{formData.email}</span>
-              </p>
-              <input
-                type="text"
-                maxLength={6}
-                value={verificationCode}
-                onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').substring(0, 6);
-                    setVerificationCode(value);
-                    if (verificationError) setVerificationError('');
-                }}
-                className="w-full text-center text-xl font-mono tracking-widest px-4 py-3 border-2 border-violet-300 rounded-lg mb-2 focus:border-violet-500 focus:ring-0 transition"
-                placeholder="000000"
-                inputMode="numeric"
-              />
-              
-              {verificationError && <p className="text-red-600 text-sm mb-3 font-medium">{verificationError}</p>}
-              
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 rounded-lg">
-                <p className="text-yellow-800 text-xs font-semibold">CÓDIGO DE PRUEBA: <span className="font-mono">{debugCode}</span></p>
-                <p className="text-yellow-800 text-xs">Usa este código (123456) para continuar el proceso de registro mock.</p>
-              </div>
-
-              <div className="flex justify-end mt-6 space-x-3">
-                <button
-                  onClick={() => {
-                    setShowVerificationModal(false);
-                    setVerificationCode('');
-                    setVerificationError('');
-                    setDebugCode('');
-                  }}
-                  className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleVerifyAndRegister}
-                  disabled={isVerifying || verificationCode.length !== 6}
-                  className={`px-5 py-2 rounded-lg text-white font-medium transition-all duration-300 flex items-center justify-center ${isVerifying || verificationCode.length !== 6 ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700 shadow-md'}`}
-                >
-                  {isVerifying ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Verificando...
-                    </>
-                  ) : 'Verificar y Registrar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
