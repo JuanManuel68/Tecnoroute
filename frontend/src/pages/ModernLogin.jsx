@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import {
   TruckIcon,
   UserIcon,
@@ -8,33 +6,15 @@ import {
   EyeSlashIcon,
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
-
-<<<<<<< HEAD
-// MOCKS DE DEPENDENCIAS PARA DEMO
-const useAuth = () => ({
-  login: async (email, password) => {
-    console.log(`[MOCK] Login: ${email}`);
-    if (password === 'password123') return { success: true };
-    return { success: false, error: 'Credenciales inválidas (usa "password123").' };
-  },
-  getDashboardRoute: () => '/dashboard'
-});
-const useNavigate = () => (path) => console.log(`[MOCK] Navegación a: ${path}`);
-const useSearchParams = () => [{ get: (key) => (key === 'type' ? 'user' : null) }, () => {}];
-=======
-
-// Definición de colores principales
-// Morado Principal (Purple) = #7c3aed (indigo-600)
-// Acento Suave (Lavender) = #ede9fe (indigo-100)
-// Morado Oscuro para fondo = #4c1d95 (violeta oscuro, para contraste)
->>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
+import { useAuth } from '../context/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const ModernLogin = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [bgPos, setBgPos] = useState(50); // posición del fondo
+  const [bgPos, setBgPos] = useState(50);
 
   const [searchParams] = useSearchParams();
   const loginType = searchParams.get('type');
@@ -54,13 +34,13 @@ const ModernLogin = () => {
     setError('');
     const result = await login(formData.email, formData.password);
     if (result.success) navigate(getDashboardRoute());
-    else setError(result.error);
+    else setError(result.error || 'Error al iniciar sesión.');
     setLoading(false);
   };
 
   const handleMouseMove = (e) => {
-    const y = e.clientY / window.innerHeight; // valor entre 0 y 1
-    setBgPos(20 + y * 60); // mueve el fondo entre 20% y 80%
+    const y = e.clientY / window.innerHeight;
+    setBgPos(20 + y * 60);
   };
 
   return (
@@ -105,7 +85,9 @@ const ModernLogin = () => {
         <form onSubmit={handleLogin} className="space-y-6">
           {/* Email */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Correo electrónico</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Correo electrónico
+            </label>
             <div className="relative">
               <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
               <input
@@ -122,7 +104,9 @@ const ModernLogin = () => {
 
           {/* Password */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Contraseña</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Contraseña
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -132,13 +116,20 @@ const ModernLogin = () => {
                 onChange={handleInputChange}
                 placeholder="••••••••"
                 className="w-full rounded-full border border-gray-300 py-3 pl-4 pr-10 text-gray-800 focus:border-[#0057ff] focus:ring-2 focus:ring-[#0057ff]"
+                onCopy={(e) => e.preventDefault()} // ❌ Bloquea copiar
+                onCut={(e) => e.preventDefault()}  // ❌ Bloquea cortar
+                onPaste={(e) => e.preventDefault()} // ❌ Bloquea pegar
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0057ff]"
               >
-                {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                {showPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
               </button>
             </div>
           </div>
