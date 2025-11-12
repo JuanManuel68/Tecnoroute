@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
 
+=======
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+>>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
 import {
 
   UserIcon,
@@ -24,6 +29,7 @@ import {
 
 } from '@heroicons/react/24/outline';
 
+<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +38,10 @@ import { useAuth } from '../context/AuthContext';
 
 const ModernRegister = () => {
 
+=======
+
+const ModernRegister = () => {
+>>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
   const { register, getDashboardRoute } = useAuth();
 
 
@@ -88,6 +98,7 @@ const ModernRegister = () => {
 
   const [loading, setLoading] = useState(false);
 
+<<<<<<< HEAD
   const navigate = useNavigate();
 
 
@@ -104,6 +115,8 @@ const ModernRegister = () => {
 
 
 
+=======
+>>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
   // 🔠 Transformar a mayúsculas y validar caracteres en nombres/apellidos
 
   const handleInputChange = (e) => {
@@ -157,6 +170,7 @@ const ModernRegister = () => {
   };
 
 
+<<<<<<< HEAD
 
   const validateField = (name, value) => {
 
@@ -398,6 +412,54 @@ const ModernRegister = () => {
 
     }
 
+=======
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setFieldErrors({});
+
+    const errors = {};
+    ['nombres','apellidos','email','phone','address','city','password','confirmPassword'].forEach(field => {
+      const error = validateField(field, formData[field]);
+      if (error) errors[field] = error;
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Por favor corrige los errores en el formulario');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.acceptTerms) {
+      setError('Debes aceptar los términos y condiciones');
+      setLoading(false);
+      return;
+    }
+
+    // Registrar directamente sin verificación de código
+    const result = await register({
+      nombres: formData.nombres,
+      apellidos: formData.apellidos,
+      email: formData.email,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword,
+      phone: formData.phone,
+      address: formData.address,
+      city: formData.city,
+      role: formData.role
+    });
+
+    if (result.success) {
+      // Navegar al dashboard después del registro exitoso
+      navigate(getDashboardRoute());
+    } else {
+      setError(result.error || 'Error al crear la cuenta');
+    }
+    
+    setLoading(false);
+>>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
   };
 
 
@@ -475,9 +537,13 @@ const ModernRegister = () => {
 
 
   return (
+<<<<<<< HEAD
 
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-10 px-4">
 
+=======
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-10 px-4 font-sans">
+>>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
       <div className="max-w-5xl w-full bg-white rounded-xl shadow-lg p-8">
 
         <div className="text-center mb-8">
@@ -769,9 +835,21 @@ const ModernRegister = () => {
                   className={`w-full py-3 rounded-lg text-white font-medium transition-all ${loading ? 'bg-gray-400' : 'bg-primary-600 hover:bg-primary-700 hover:scale-105 shadow-md'}`}
 
                 >
+<<<<<<< HEAD
 
                   {loading ? 'Creando cuenta...' : 'Registrarse'}
 
+=======
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Registrando...
+                    </>
+                  ) : 'Registrarse'}
+>>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
                 </button>
 
               </div>
@@ -808,6 +886,7 @@ const ModernRegister = () => {
 
         </div>
 
+<<<<<<< HEAD
 
 
         {/* Modal de verificación */}
@@ -878,6 +957,8 @@ const ModernRegister = () => {
 
         )}
 
+=======
+>>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
       </div>
 
     </div>

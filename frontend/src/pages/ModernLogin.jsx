@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   TruckIcon,
   UserIcon,
@@ -7,6 +9,7 @@ import {
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
 
+<<<<<<< HEAD
 // MOCKS DE DEPENDENCIAS PARA DEMO
 const useAuth = () => ({
   login: async (email, password) => {
@@ -18,6 +21,13 @@ const useAuth = () => ({
 });
 const useNavigate = () => (path) => console.log(`[MOCK] Navegación a: ${path}`);
 const useSearchParams = () => [{ get: (key) => (key === 'type' ? 'user' : null) }, () => {}];
+=======
+
+// Definición de colores principales
+// Morado Principal (Purple) = #7c3aed (indigo-600)
+// Acento Suave (Lavender) = #ede9fe (indigo-100)
+// Morado Oscuro para fondo = #4c1d95 (violeta oscuro, para contraste)
+>>>>>>> 2fd438121f58aa2645d61e5df135a3ed7e6dea8c
 
 const ModernLogin = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
