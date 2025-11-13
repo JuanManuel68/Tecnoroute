@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // Imágenes del manual
 import registroBoton from '../manual/registro-boton.png';
@@ -6,40 +6,61 @@ import formularioRegistro from '../manual/formulario-registro.png';
 import explorarPagina from '../manual/explorar-pagina.png';
 
 const ManualUsuario = () => {
+  const [bgPos, setBgPos] = useState(50); // posición vertical del fondo
 
+  const handleMouseMove = (e) => {
+    const y = e.clientY / window.innerHeight; // 0 a 1 según posición del mouse
+    setBgPos(20 + y * 60); // mueve el fondo entre 20% y 80%
+  };
 
   return (
     <>
       <style>{`
-        /* Fondo general: Degradado de blanco a lavanda muy suave */
+        /* Fondo general */
         .manual-container {
           min-height: 100vh;
-          background: linear-gradient(135deg, #ffffff, #ede9fe);
           padding: 60px 20px;
           display: flex;
           justify-content: center;
           align-items: flex-start;
           font-family: 'Inter', sans-serif;
+          background-size: cover;
+          background-repeat: no-repeat;
+          background-position: center;
+          position: relative;
+          overflow: hidden;
+          transition: background-position 0.3s ease-out;
+        }
+
+        /* Degradado superpuesto */
+        .manual-container::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(135deg, rgba(0, 102, 255, 0.7), rgba(0, 68, 204, 0.7), rgba(0, 43, 128, 0.7));
+          z-index: 0;
         }
 
         /* Tarjeta principal */
         .manual-card {
           background: #ffffff;
-          border-radius: 20px;
-          /* Sombra con toque de morado */
-          box-shadow: 0 12px 30px rgba(91, 33, 182, 0.1); 
+          border-radius: 24px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
           max-width: 900px;
           width: 100%;
           padding: 50px 40px;
           animation: fadeIn 0.8s ease-in-out;
           position: relative;
+          z-index: 1; /* para estar sobre el fondo */
         }
 
         .manual-title {
-          font-size: 2.3rem;
+          font-size: 2.4rem;
           font-weight: 800;
-          /* Título en Morado Oscuro */
-          color: #5b21b6; 
+          color: #002b80;
           text-align: center;
           margin-bottom: 12px;
         }
@@ -51,26 +72,22 @@ const ManualUsuario = () => {
           margin-bottom: 40px;
         }
 
-        /* Pasos */
         .manual-step {
           margin-bottom: 45px;
           padding: 25px;
-          /* Borde en Morado Principal */
-          border-left: 6px solid #7c3aed; 
+          border-left: 6px solid #0066ff;
           border-radius: 12px;
-          background: #f9f8ff; /* Fondo muy ligero */
+          background: #f3f7ff;
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .manual-step:hover {
           transform: translateY(-5px);
-          /* Sombra sutil del morado principal */
-          box-shadow: 0 5px 20px rgba(124, 58, 237, 0.1); 
+          box-shadow: 0 5px 20px rgba(0, 102, 255, 0.2);
         }
 
         .manual-step h2 {
-          /* Subtítulos en Morado Oscuro */
-          color: #5b21b6; 
+          color: #002b80;
           font-size: 1.3rem;
           font-weight: 700;
           margin-bottom: 10px;
@@ -87,52 +104,26 @@ const ManualUsuario = () => {
           width: 100%;
           max-width: 600px;
           margin: 15px auto 0;
-          border-radius: 10px;
-          /* Borde sutil */
-          border: 1px solid #c4b5fd; 
-          box-shadow: 0 3px 10px rgba(91, 33, 182, 0.05);
+          border-radius: 12px;
+          border: 1px solid #cbd5e1;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
 
-        /* Sección final */
         .manual-end {
           text-align: center;
           margin-top: 50px;
         }
 
         .manual-end p {
-          /* Texto final en Morado Oscuro */
-          color: #5b21b6; 
+          color: #002b80;
           font-weight: 600;
           margin-bottom: 25px;
           font-size: 1.1rem;
         }
 
-        /* Botón de descarga */
-        .manual-btn {
-          /* Degradado de Morado Principal a Oscuro */
-          background: linear-gradient(90deg, #7c3aed, #5b21b6);
-          color: white;
-          font-weight: 600;
-          padding: 14px 32px;
-          border: none;
-          border-radius: 10px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-          font-size: 1rem;
-        }
-
-        .manual-btn:hover {
-          background: linear-gradient(90deg, #6d28d9, #5b21b6);
-          transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
-        }
-
-        /* Footer */
         footer {
-          /* Fondo en Morado Oscuro */
-          background-color: #5b21b6; 
-          color: #e0d7fe;
+          background-color: #002b80;
+          color: #c7d2fe;
           padding: 20px;
           border-radius: 0 0 20px 20px;
           text-align: center;
@@ -145,16 +136,24 @@ const ManualUsuario = () => {
           font-weight: 700;
         }
 
-        /* Animación */
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
-      <div className="manual-container">
+      <div
+        className="manual-container"
+        onMouseMove={handleMouseMove}
+        style={{
+          backgroundImage: `
+            url('https://eldiariony.com/wp-content/uploads/sites/2/2024/12/16-electrodomesticos-de-tu-hogar-que-hacen-que-tu-factura-de-electricidad-sea-cara-shutterstock_2473408983.jpg?fit=1316,740&crop=0px,0px,1316px,740px')
+          `,
+          backgroundPosition: `center ${bgPos}%`,
+        }}
+      >
         <div className="manual-card">
-          <h1 className="manual-title">Manual de Usuario </h1>
+          <h1 className="manual-title">Manual de Usuario</h1>
           <p className="manual-subtitle">
             Aprende cómo registrarte y comenzar a usar la plataforma de forma sencilla y rápida.
           </p>
@@ -189,10 +188,8 @@ const ManualUsuario = () => {
           {/* Final */}
           <div className="manual-end">
             <p>🚀 ¡Listo! Ya puedes disfrutar de todos los servicios de <strong>TecnoRoute</strong>.</p>
-
           </div>
 
-          {/* Footer */}
           <footer>
             © {new Date().getFullYear()} <span>TecnoRoute</span>. Todos los derechos reservados.
           </footer>
