@@ -6,22 +6,13 @@ import {
   EyeIcon,
   ShoppingBagIcon,
   CalendarIcon,
-  MapPinIcon,
-  PhoneIcon,
-  CreditCardIcon,
-  DocumentTextIcon,
-  PencilIcon,
-  TrashIcon,
-  ExclamationTriangleIcon,
-  MapIcon
+  MapIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
-import {
-  CheckCircleIcon as CheckCircleIconSolid,
-  StarIcon as StarIconSolid
-} from '@heroicons/react/24/solid';
+import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { pedidosAPI, carritoAPI } from '../services/apiService';
+import { pedidosAPI } from '../services/apiService';
 import { useToast } from '../components/Toast';
 import EditOrderModal from '../components/EditOrderModal';
 
@@ -32,15 +23,17 @@ const ModernOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [orderToDelete, setOrderToDelete] = useState(null);
+
+  const [orderProducts, setOrderProducts] = useState([]);
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [orderToEdit, setOrderToEdit] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Cargar pedidos del usuario
   useEffect(() => {
     const loadOrders = async () => {
       try {
@@ -87,21 +80,12 @@ const ModernOrders = () => {
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-  const handleDeleteOrder = async (orderId) => {
-    try {
-      setIsDeleting(true);
-      await pedidosAPI.delete(orderId);
-      setOrders(prev => prev.filter(order => order.id !== orderId));
-      setShowDeleteModal(false);
-      showToast('Pedido eliminado exitosamente', 'success');
-    } catch {
-      showToast('Error al eliminar el pedido.', 'error');
-    } finally {
-      setIsDeleting(false);
-    }
+  // Abrir modal y cargar productos del pedido directamente desde order.productos
+  const handleOpenDetails = (order) => {
+    setSelectedOrder(order);
+    setOrderProducts(order.productos || []); // Usamos productos que ya vienen en el pedido
+    setShowModal(true);
   };
-
-  const canEditOrDelete = (order) => order.estado?.toLowerCase() === 'pendiente';
 
   if (loading)
     return (
@@ -139,7 +123,7 @@ const ModernOrders = () => {
           onClick={() => navigate('/productos')}
           className="bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black text-white font-bold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200"
         >
-          🛍️ Explorar Productos
+          Explorar Productos
         </button>
       </div>
     );
@@ -169,10 +153,7 @@ const ModernOrders = () => {
 
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => {
-                    setSelectedOrder(order);
-                    setShowModal(true);
-                  }}
+                  onClick={() => handleOpenDetails(order)}
                   className="bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black text-white font-semibold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
                 >
                   <EyeIcon className="w-5 h-5" />
@@ -188,28 +169,13 @@ const ModernOrders = () => {
                     <span>Rastrear Pedido</span>
                   </button>
                 )}
-
-                {canEditOrDelete(order) && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setOrderToDelete(order);
-                        setShowDeleteModal(true);
-                      }}
-                      className="bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black text-white font-semibold py-2 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
-                    >
-                      <TrashIcon className="w-5 h-5" />
-                      <span>Eliminar</span>
-                    </button>
-                  </>
-                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Modales */}
+      {/* Modal de detalles */}
       {showModal && selectedOrder && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden">
@@ -219,8 +185,50 @@ const ModernOrders = () => {
                 <XCircleIcon className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6">
-              <p className="text-gray-700 mb-4">Total: {formatPrice(selectedOrder.total)}</p>
+
+            <div className="p-6 space-y-4">
+              <p className="text-gray-700 font-semibold">Total: {formatPrice(selectedOrder.total)}</p>
+              <p className="text-gray-600 mb-4">Productos del pedido:</p>
+
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {orderProducts.length > 0 ? (
+                  orderProducts.map((producto, idx) => (
+                    <div
+                      key={idx}
+                      className="flex justify-between items-center bg-gray-100 rounded-xl p-3 shadow-sm"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={producto.imagen_url || '/placeholder-product.jpg'} 
+                          alt={producto.nombre}
+                          className="w-16 h-16 object-cover rounded-lg border border-gray-300"
+                        />
+                        <div>
+                          <p className="font-semibold">{producto.nombre}</p>
+                          <p className="text-gray-500 text-sm">
+                            Cantidad: {producto.cantidad} | Precio: {formatPrice(producto.precio)}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          setOrderToEdit(selectedOrder);
+                          setShowEditModal(true);
+                          setShowModal(false);
+                        }}
+                        className="bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black text-white py-1 px-3 rounded-xl text-sm flex items-center space-x-1"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                        <span>Editar</span>
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center">No hay productos en este pedido.</p>
+                )}
+              </div>
+
               <button
                 onClick={() => setShowModal(false)}
                 className="w-full bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black text-white py-3 rounded-xl mt-4"
@@ -232,31 +240,7 @@ const ModernOrders = () => {
         </div>
       )}
 
-      {showDeleteModal && orderToDelete && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-gray-900 mb-3 text-center">¿Eliminar Pedido?</h3>
-            <p className="text-gray-600 mb-6 text-center">
-              Esta acción no se puede deshacer. Se eliminará el pedido #{orderToDelete.numero_pedido}.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-xl"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => handleDeleteOrder(orderToDelete.id)}
-                className="flex-1 bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black text-white py-3 rounded-xl"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Modal de edición */}
       <EditOrderModal
         order={orderToEdit}
         isOpen={showEditModal}
