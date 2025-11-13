@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; 
+import React, { useState } from 'react';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -14,7 +14,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ModernRegisterCitySide = () => {
+const ModernRegister = () => {
   const { register, getDashboardRoute } = useAuth();
   const navigate = useNavigate();
 
@@ -73,7 +73,7 @@ const ModernRegisterCitySide = () => {
     setLoading(true);
     const errors = {};
     Object.keys(formData).forEach((k) => {
-      if (['nombres','apellidos','email','password','confirmPassword','phone','address','city'].includes(k)) {
+      if (['nombres','apellidos','email','password','confirmPassword'].includes(k)) {
         const err = validateField(k, formData[k]);
         if (err) errors[k] = err;
       }
@@ -96,8 +96,8 @@ const ModernRegisterCitySide = () => {
   };
 
   const benefits = [
-    { icon: TruckIcon, title: 'Envío Gratis', description: 'Pedidos superiores a $50' },
-    { icon: UserIcon, title: 'Atención Personalizada', description: 'Soporte dedicado' },
+    { icon: TruckIcon, title: 'Envío Gratis', description: 'En pedidos superiores a $50' },
+    { icon: UserIcon, title: 'Atención Personalizada', description: 'Soporte dedicado para ti' },
     { icon: EnvelopeIcon, title: 'Ofertas Exclusivas', description: 'Promociones solo para miembros' },
   ];
 
@@ -107,206 +107,177 @@ const ModernRegisterCitySide = () => {
       className="relative flex min-h-screen items-center justify-center px-6 py-12 overflow-hidden"
       style={{
         backgroundImage: `
-          linear-gradient(to bottom right, rgba(106,13,173,0.7), rgba(0,87,255,0.6), rgba(255,123,0,0.6)),
+          linear-gradient(to bottom right,
+            rgba(106,13,173,0.7),
+            rgba(0,87,255,0.6),
+            rgba(255,123,0,0.6)
+          ),
           url('https://eldiariony.com/wp-content/uploads/sites/2/2024/12/16-electrodomesticos-de-tu-hogar-que-hacen-que-tu-factura-de-electricidad-sea-cara-shutterstock_2473408983.jpg?fit=1316,740&crop=0px,0px,1316px,740px')
         `,
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: `center ${bgPos}%`,
-        transition: 'background-position 0.3s ease-out'
+        transition: 'background-position 0.3s ease-out',
       }}
     >
-      <div className="w-full max-w-3xl sm:max-w-4xl bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-t-4 border-[#6a0dad] p-6 sm:p-8">
-        <div className="text-center mb-4">
-          <div className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-xl bg-[#1f2937] shadow-md">
-            <UserPlusIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#ffe066]" />
+      <div className="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border-t-8 border-[#6a0dad] relative z-10 p-10">
+        <div className="text-center mb-10">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#1f2937] shadow-lg">
+            <UserPlusIcon className="h-10 w-10 text-[#ffe066]" />
           </div>
-          <h1 className="mt-2 text-xl sm:text-2xl font-bold text-[#1a1a1a]">Crea tu cuenta TecnoRoute</h1>
-          <p className="text-gray-600 text-xs sm:text-sm">Regístrate y accede a todos los beneficios</p>
+          <h1 className="mt-4 text-3xl font-extrabold text-[#1a1a1a]">Crea tu cuenta TecnoRoute</h1>
+          <p className="mt-2 text-gray-600">Regístrate y accede a todos los beneficios</p>
         </div>
 
-        {error && (
-          <div className="mb-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-center text-red-700 text-sm">
-            {error}
-          </div>
-        )}
+        <div className="md:grid md:grid-cols-3 gap-8">
+          {/* Formulario */}
+          <div className="md:col-span-2">
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-center text-red-700">
+                {error}
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Grid uniforme */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {['nombres','apellidos','email','phone'].map((id) => {
-              const labels = {
-                nombres: 'Nombres',
-                apellidos: 'Apellidos',
-                email: 'Correo electrónico',
-                phone: 'Teléfono',
-              };
-              const placeholders = {
-                nombres: 'JUAN CARLOS',
-                apellidos: 'PÉREZ GONZÁLEZ',
-                email: 'tu@email.com',
-                phone: '+57 300 000 0000',
-              };
-              const icons = {
-                nombres: UserIcon,
-                apellidos: UserIcon,
-                email: EnvelopeIcon,
-                phone: PhoneIcon,
-              };
-              const Icon = icons[id];
-              return (
-                <div key={id}>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">{labels[id]} *</label>
-                  <div className="relative">
-                    <input
-                      id={id}
-                      name={id}
-                      type={id === 'email' ? 'email' : 'text'}
-                      value={formData[id]}
-                      onChange={handleInputChange}
-                      onBlur={handleBlur}
-                      placeholder={placeholders[id]}
-                      className={`w-full h-10 px-3 pl-8 border rounded-lg focus:ring-1 focus:ring-[#6a0dad] focus:border-[#6a0dad] ${
-                        fieldErrors[id] ? 'border-red-500' : 'border-gray-300'
-                      } text-sm`}
-                    />
-                    <Icon className="w-4 h-4 text-gray-400 absolute left-2 top-1/2 transform -translate-y-1/2" />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="bg-gray-50 p-6 rounded-xl shadow-inner space-y-5">
+                {/* Campos principales */}
+                {[
+                  { id: 'nombres', label: 'Nombres', icon: UserIcon, type: 'text', placeholder: 'JUAN CARLOS' },
+                  { id: 'apellidos', label: 'Apellidos', icon: UserIcon, type: 'text', placeholder: 'PÉREZ GONZÁLEZ' },
+                  { id: 'email', label: 'Correo electrónico', icon: EnvelopeIcon, type: 'email', placeholder: 'tu@email.com' },
+                  { id: 'phone', label: 'Teléfono', icon: PhoneIcon, type: 'tel', placeholder: '+57 300 000 0000' },
+                  { id: 'address', label: 'Dirección', icon: MapPinIcon, type: 'text', placeholder: 'Calle 123 #45-67' },
+                ].map(({ id, label, icon: Icon, type, placeholder }) => (
+                  <div key={id}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{label} *</label>
+                    <div className="relative">
+                      <input
+                        id={id}
+                        name={id}
+                        type={type}
+                        value={formData[id]}
+                        onChange={handleInputChange}
+                        onBlur={handleBlur}
+                        placeholder={placeholder}
+                        className={`w-full px-4 py-3 pl-10 border rounded-lg focus:ring-2 focus:ring-[#6a0dad] focus:border-[#6a0dad] ${
+                          fieldErrors[id] ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      <Icon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    </div>
+                    {fieldErrors[id] && <p className="mt-1 text-sm text-red-600">{fieldErrors[id]}</p>}
                   </div>
-                  {fieldErrors[id] && <p className="mt-1 text-xs text-red-600">{fieldErrors[id]}</p>}
-                </div>
-              );
-            })}
+                ))}
 
-            {/* Dirección y Ciudad en la misma fila */}
-            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Dirección */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Dirección *</label>
-                <div className="relative">
-                  <input
-                    id="address"
-                    name="address"
-                    type="text"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    placeholder="Calle 123 #45-67"
-                    className={`w-full h-10 px-3 pl-8 border rounded-lg focus:ring-1 focus:ring-[#6a0dad] focus:border-[#6a0dad] ${
-                      fieldErrors.address ? 'border-red-500' : 'border-gray-300'
-                    } text-sm`}
-                  />
-                  <MapPinIcon className="w-4 h-4 text-gray-400 absolute left-2 top-1/2 transform -translate-y-1/2" />
-                </div>
-                {fieldErrors.address && <p className="mt-1 text-xs text-red-600">{fieldErrors.address}</p>}
-              </div>
-
-              {/* Ciudad */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Ciudad *</label>
-                <div className="relative">
-                  <select
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    className={`w-full h-10 px-3 border rounded-lg focus:ring-1 focus:ring-[#6a0dad] focus:border-[#6a0dad] ${
-                      fieldErrors.city ? 'border-red-500' : 'border-gray-300'
-                    } text-sm appearance-none`}
-                  >
-                    <option value="">Selecciona tu ciudad</option>
-                    {cities.map((city) => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
-                  <ChevronDownIcon className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 transform -translate-y-1/2" />
-                </div>
-                {fieldErrors.city && <p className="mt-1 text-xs text-red-600">{fieldErrors.city}</p>}
-              </div>
-            </div>
-
-            {/* Contraseñas */}
-            {['password','confirmPassword'].map((id) => {
-              const show = id === 'password' ? showPassword : showConfirmPassword;
-              const setShow = id === 'password' ? setShowPassword : setShowConfirmPassword;
-              const label = id === 'password' ? 'Contraseña' : 'Confirmar Contraseña';
-              const placeholder = id === 'password' ? 'Crea tu contraseña' : 'Repite tu contraseña';
-              return (
-                <div key={id} className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">{label} *</label>
+                {/* Ciudad */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad *</label>
                   <div className="relative">
-                    <input
-                      id={id}
-                      name={id}
-                      type={show ? 'text' : 'password'}
-                      value={formData[id]}
+                    <select
+                      id="city"
+                      name="city"
+                      value={formData.city}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
-                      onCopy={(e) => e.preventDefault()}
-                      onPaste={(e) => e.preventDefault()}
-                      onCut={(e) => e.preventDefault()}
-                      placeholder={placeholder}
-                      className={`w-full h-10 px-3 pl-8 pr-8 border rounded-lg focus:ring-1 focus:ring-[#6a0dad] focus:border-[#6a0dad] ${
-                        fieldErrors[id] ? 'border-red-500' : 'border-gray-300'
-                      } text-sm`}
-                    />
-                    <LockClosedIcon className="w-4 h-4 text-gray-400 absolute left-2 top-1/2 transform -translate-y-1/2" />
-                    <button
-                      type="button"
-                      onClick={() => setShow(!show)}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#6a0dad]"
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#6a0dad] focus:border-[#6a0dad] ${
+                        fieldErrors.city ? 'border-red-500' : 'border-gray-300'
+                      } appearance-none`}
                     >
-                      {show ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-                    </button>
+                      <option value="">Selecciona tu ciudad</option>
+                      {cities.map((city) => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                    </select>
+                    <ChevronDownIcon className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
                   </div>
-                  {fieldErrors[id] && <p className="mt-1 text-xs text-red-600">{fieldErrors[id]}</p>}
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Términos */}
-          <div className="flex items-start">
-            <input
-              id="acceptTerms"
-              name="acceptTerms"
-              type="checkbox"
-              checked={formData.acceptTerms}
-              onChange={handleInputChange}
-              className="h-3 w-3 sm:h-4 sm:w-4 text-[#6a0dad] border-gray-300 rounded mt-1"
-            />
-            <label htmlFor="acceptTerms" className="ml-2 text-xs sm:text-sm text-gray-800">
-              Acepto los <span className="text-[#6a0dad] underline cursor-pointer">términos y condiciones</span> y la{' '}
-              <span className="text-[#6a0dad] underline cursor-pointer">política de privacidad</span> *
-            </label>
-          </div>
+                {/* Contraseñas */}
+                <div>
+                  {[
+                    { id: 'password', label: 'Contraseña', show: showPassword, setShow: setShowPassword },
+                    { id: 'confirmPassword', label: 'Confirmar Contraseña', show: showConfirmPassword, setShow: setShowConfirmPassword },
+                  ].map(({ id, label, show, setShow }) => (
+                    <div key={id} className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{label} *</label>
+                      <div className="relative">
+                        <input
+                          id={id}
+                          name={id}
+                          type={show ? 'text' : 'password'}
+                          value={formData[id]}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          onCopy={(e) => e.preventDefault()}
+                          onPaste={(e) => e.preventDefault()}
+                          onCut={(e) => e.preventDefault()}
+                          className={`w-full px-4 py-3 pl-10 pr-10 border rounded-lg focus:ring-2 focus:ring-[#6a0dad] ${
+                            fieldErrors[id] ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                          placeholder={id === 'password' ? 'Crea tu contraseña' : 'Repite tu contraseña'}
+                        />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full h-10 rounded-full text-white font-semibold text-sm shadow transition-all ${
-              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-800 hover:bg-gray-600 hover:scale-105'
-            }`}
-          >
-            {loading ? 'Creando cuenta...' : 'Registrarse'}
-          </button>
-        </form>
+                        <LockClosedIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                        <button
+                          type="button"
+                          onClick={() => setShow(!show)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#6a0dad]"
+                        >
+                          {show ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {fieldErrors[id] && <p className="mt-1 text-sm text-red-600">{fieldErrors[id]}</p>}
+                    </div>
+                  ))}
+                </div>
 
-        {/* Beneficios fila horizontal */}
-        <div className="mt-4 flex flex-col sm:flex-row justify-between gap-2">
-          {benefits.map(({ icon: Icon, title, description }) => (
-            <div key={title} className="flex items-center bg-gray-50 p-2 rounded-lg shadow-inner flex-1">
-              <Icon className="w-4 h-4 text-[#6a0dad] mr-2" />
-              <div>
-                <h3 className="text-xs font-semibold text-gray-800">{title}</h3>
-                <p className="text-[10px] text-gray-600">{description}</p>
+                {/* Términos */}
+                <div className="flex items-start">
+                  <input
+                    id="acceptTerms"
+                    name="acceptTerms"
+                    type="checkbox"
+                    checked={formData.acceptTerms}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-[#6a0dad] border-gray-300 rounded mt-1"
+                  />
+                  <label htmlFor="acceptTerms" className="ml-2 text-sm text-gray-800">
+                    Acepto los <span className="text-[#6a0dad] underline cursor-pointer">términos y condiciones</span> y la{' '}
+                    <span className="text-[#6a0dad] underline cursor-pointer">política de privacidad</span> *
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full py-3 rounded-full text-white font-semibold text-lg shadow-lg transition-all ${
+                    loading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gray-800 hover:bg-gray-600 hover:scale-105'
+                  }`}
+                >
+                  {loading ? 'Creando cuenta...' : 'Registrarse'}
+                </button>
               </div>
-            </div>
-          ))}
+            </form>
+          </div>
+
+          {/* Beneficios */}
+          <div className="md:col-span-1 space-y-4 mt-8 md:mt-0">
+            {benefits.map(({ icon: Icon, title, description }) => (
+              <div key={title} className="flex items-start bg-gray-50 p-4 rounded-lg shadow-inner">
+                <Icon className="w-8 h-8 text-[#6a0dad] mr-3 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-gray-800">{title}</h3>
+                  <p className="text-gray-600 text-sm">{description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default ModernRegisterCitySide;
+export default ModernRegister;
