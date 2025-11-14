@@ -188,9 +188,9 @@ const ModernDashboard = () => {
         </div>
 
         {/* Right Column: Pedidos Recientes + Resumen en tarjetas */}
-        <div className="flex-1 flex flex-col space-y-8">
+        <div className="flex-1 flex gap-8">
           {/* Pedidos Recientes */}
-          <div className="bg-white bg-opacity-80 p-6 rounded-xl shadow">
+          <div className="bg-white bg-opacity-80 p-6 rounded-xl shadow flex-1">
             <h2 className="text-xl font-bold text-gray-900 mb-4">{isAdmin() ? 'Pedidos Recientes' : 'Envíos Recientes'}</h2>
             <div className="space-y-4 max-h-[400px] overflow-y-auto">
               {isAdmin() ? (
@@ -223,8 +223,8 @@ const ModernDashboard = () => {
             </div>
           </div>
 
-          {/* Resumen de Pedidos como tarjetas */}
-          <div className="flex flex-col space-y-4">
+          {/* Resumen de Pedidos */}
+          <div className="flex flex-col space-y-4 w-72">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Resumen de Pedidos</h3>
             <div className="bg-white bg-opacity-80 p-4 rounded-xl shadow flex items-center gap-3">
               <ClipboardIconSolid className="w-6 h-6 text-blue-600" />
